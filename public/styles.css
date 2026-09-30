@@ -1456,3 +1456,54 @@ button.btn{border:0;cursor:pointer}
 /* 스팸 방지 숨은 칸 */
 .iq-hp{position:absolute !important;left:-9999px;width:1px;height:1px;overflow:hidden}
 .iq-done.is-ok .iq-done-t::before{content:"✓ ";color:var(--gold)}
+
+/* 모바일 문장: 글자 크기는 그대로, 줄 나눔 + 글자 간격으로 좌우 맞춤 */
+@media (max-width:767px){
+  .statement-text .st-line{display:inline}
+  .statement-text .st-l1 .st-fill{display:none}
+}
+
+/* =========================================================
+   견적 조합 → 빠른 상담 신청 창
+   ========================================================= */
+.qm{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:20px}
+.qm-dim{position:absolute;inset:0;background:rgba(12,16,22,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:qmFade .25s ease both}
+.qm-card{position:relative;width:min(460px,100%);max-height:calc(100svh - 40px);overflow:auto;background:#fff;border-radius:22px;padding:30px 28px 26px;box-shadow:0 40px 80px -30px rgba(0,0,0,.5);animation:qmUp .35s cubic-bezier(.16,1,.3,1) both}
+.qm-x{position:absolute;top:14px;right:14px;width:36px;height:36px;border:0;border-radius:50%;background:#f3f2ef;font-size:22px;line-height:1;cursor:pointer;color:var(--ink-2)}
+.qm-k{margin:0 0 6px;font-size:13px;font-weight:800;color:var(--gold-deep);letter-spacing:.02em}
+.qm-t{margin:0 0 16px;font-size:22px;font-weight:800;letter-spacing:-.03em;color:var(--ink)}
+.qm-sum{background:#f7f6f3;border-radius:14px;padding:14px 16px;margin-bottom:18px;font-size:14px;color:var(--ink-2)}
+.qm-sum .qs-field{font-weight:800;color:var(--ink);margin-bottom:8px}
+.qm-sum .qs-row{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+.qm-sum .qs-row em{font-style:normal;color:var(--muted)}
+.qm-sum .qs-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding-top:10px;border-top:1px solid #e6e4df;font-weight:800;color:var(--ink)}
+.qm-sum .qs-total b{font-size:18px;color:var(--gold-deep)}
+.qm-sum .qs-note{margin-top:4px;font-size:12px;color:var(--muted);text-align:right}
+.qm-f{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:13px;font-weight:700;color:var(--ink-2)}
+.qm-f b,.qm-agree b{color:var(--gold)}
+.qm-f input{height:48px;border:1px solid #e3e1dc;border-radius:12px;padding:0 14px;background:#f7f6f3;font-size:16px;color:var(--ink)}
+.qm-f input:focus{outline:none;border-color:var(--gold);background:#fff}
+.qm-f input.is-invalid{border-color:#c0392b;background:#fff}
+.qm-agree{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--muted);margin:4px 0 6px;cursor:pointer}
+.qm-agree input{width:18px;height:18px;margin-top:1px;accent-color:var(--gold);flex:0 0 auto}
+.qm-err{min-height:18px;margin:4px 0 8px;font-size:13px;font-weight:700;color:#c0392b}
+.qm-submit{width:100%;height:52px;border:0;border-radius:14px;background:var(--gold);color:#fff;font-size:16px;font-weight:800;cursor:pointer;transition:transform .15s ease,filter .2s ease}
+.qm-submit:hover{filter:brightness(1.05)}
+.qm-submit:active{transform:scale(.98)}
+.qm-submit:disabled{opacity:.6;cursor:default}
+#qm-step-done{text-align:center}
+.qm-check{width:64px;height:64px;margin:6px auto 14px;border-radius:50%;background:rgba(217,119,47,.12);display:grid;place-items:center}
+.qm-check svg{width:32px;height:32px;fill:none;stroke:var(--gold);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;animation:qmCheck .5s .15s ease forwards}
+.qm-d{margin:-6px 0 16px;color:var(--muted);font-size:14px;line-height:1.6}
+#qm-step-done .qm-sum{text-align:left}
+html.qm-open{overflow:hidden}
+@keyframes qmFade{from{opacity:0}}
+@keyframes qmUp{from{opacity:0;transform:translateY(24px) scale(.98)}}
+@keyframes qmCheck{to{stroke-dashoffset:0}}
+@media (max-width:767px){
+  .qm{place-items:end center;padding:0}
+  .qm-card{width:100%;border-radius:22px 22px 0 0;padding:26px 20px calc(20px + env(safe-area-inset-bottom));max-height:92svh}
+  @keyframes qmUp{from{opacity:0;transform:translateY(40px)}}
+}
+
+.qm[hidden],#qm-step-form[hidden],#qm-step-done[hidden]{display:none !important}

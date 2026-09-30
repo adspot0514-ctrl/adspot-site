@@ -943,24 +943,83 @@ var __adspotStart = function(C){
     });
   }
   // 가격안내에서 선택한 조합을 신청서에 자동으로 채움
+  /* ---------------- 견적 조합 → 빠른 상담 신청 (바로 접수) ---------------- */
+  var qm = document.getElementById('qm'), qmForm = document.getElementById('qm-form'), qmCombo = null, qmLastFocus = null;
+  function comboFromPanel(mode){
+    if(mode === 'mix'){
+      var tab = tabsEl.querySelector('[aria-selected="true"]'), items = [], total = 0;
+      PLANS.forEach(function(p){ var n = qty[p.key] || 0; if(n){ items.push({name:p.name, count:n, price:p.price, subtotal:n * p.price}); total += n * p.price; } });
+      return {type:'mix', field:tab ? tab.textContent : '', items:items, total:total};
+    }
+    return {type:'custom', field:cq.field || '', budget:cq.budget || ''};
+  }
+  function comboHTML(c){
+    var h = '<div class="qs-field">' + esc(c.type === 'mix' ? (c.field || '분야 미선택') + ' 추천 조합' : '맞춤 견적 · ' + (c.field || '분야 미선택')) + '</div>';
+    if(c.type === 'mix'){
+      c.items.forEach(function(it){ h += '<div class="qs-row"><span>' + esc(it.name) + ' <em>' + it.count + '건 × ' + won(it.price) + '원</em></span><span>' + won(it.subtotal) + '원</span></div>'; });
+      h += '<div class="qs-total"><span>월 예상 금액</span><b>' + won(c.total) + '원</b></div><div class="qs-note">부가세 별도 · 부가세 포함 ' + won(Math.round(c.total * 1.1)) + '원</div>';
+    } else {
+      h += '<div class="qs-row"><span>월 예산</span><span>' + esc(c.budget || '상담 후 결정') + '</span></div>';
+    }
+    return h;
+  }
+  function comboText(c){
+    if(c.type === 'mix') return '[견적 조합] ' + (c.field ? c.field + ' / ' : '') + c.items.map(function(it){ return it.name + ' ' + it.count + '건'; }).join(', ') + ' / 월 예상 ' + won(c.total) + '원(부가세 별도)';
+    return '[맞춤 견적] ' + (c.field ? c.field + ' 분야' : '분야 미선택') + ' / 월 예산 ' + (c.budget || '미선택');
+  }
+  function qmOpen(c){
+    qmCombo = c; qmLastFocus = document.activeElement;
+    document.getElementById('qm-sum').innerHTML = comboHTML(c);
+    document.getElementById('qm-step-form').hidden = false; document.getElementById('qm-step-done').hidden = true;
+    document.getElementById('qm-err').textContent = ''; qmForm.phone.classList.remove('is-invalid');
+    qm.hidden = false; document.documentElement.classList.add('qm-open');
+    setTimeout(function(){ qmForm.phone.focus(); }, 60);
+  }
+  function qmClose(){ qm.hidden = true; document.documentElement.classList.remove('qm-open'); if(qmLastFocus && qmLastFocus.focus) qmLastFocus.focus(); }
+  qm.addEventListener('click', function(e){ if(e.target.closest('[data-qm-close]')) qmClose(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !qm.hidden) qmClose(); });
+  // 서버가 없을 때(미리보기 등)는 기존처럼 아래 상담 신청서에 내용을 채워 안내
+  function prefillContact(c){
+    svcEl.querySelectorAll('.iq-chip').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+    if(c.field){ pressChip(fieldEl, c.field); iq.field = c.field; }
+    if(c.type === 'mix') c.items.forEach(function(it){ pressChip(svcEl, it.name, true); }); else pressChip(svcEl, '맞춤 견적', true);
+    iq.services = [].slice.call(svcEl.querySelectorAll('[aria-pressed="true"]')).map(function(x){ return x.textContent; });
+    form.message.value = comboText(c);
+    if(qmForm.phone.value) form.phone.value = qmForm.phone.value;
+    if(qmForm.office.value) form.office.value = qmForm.office.value;
+  }
   document.querySelectorAll('.est-panel .est-cta').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var mode = btn.closest('.est-panel').dataset.panel, msg = '';
-      svcEl.querySelectorAll('.iq-chip').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
-      if(mode === 'mix'){
-        var tab = tabsEl.querySelector('[aria-selected="true"]');
-        if(tab){ pressChip(fieldEl, tab.textContent); iq.field = tab.textContent; }
-        var parts = [], total = 0;
-        PLANS.forEach(function(p){ var n = qty[p.key] || 0; if(n){ parts.push(p.name + ' ' + n + '건'); pressChip(svcEl, p.name, true); total += n * p.price; } });
-        msg = '[견적 조합] ' + (tab ? tab.textContent + ' / ' : '') + parts.join(', ') + ' / 월 예상 ' + won(total) + '원(부가세 별도)';
-      } else {
-        if(cq.field){ pressChip(fieldEl, cq.field); iq.field = cq.field; }
-        pressChip(svcEl, '맞춤 견적', true);
-        msg = '[맞춤 견적] ' + (cq.field ? cq.field + ' 분야' : '분야 미선택') + ' / 월 예산 ' + (cq.budget || '미선택');
-      }
-      iq.services = [].slice.call(svcEl.querySelectorAll('[aria-pressed="true"]')).map(function(x){ return x.textContent; });
-      form.message.value = msg;
+    btn.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      qmOpen(comboFromPanel(btn.closest('.est-panel').dataset.panel));
     });
+  });
+  qmForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var err = document.getElementById('qm-err'), phone = qmForm.phone.value.trim();
+    qmForm.phone.classList.remove('is-invalid'); err.textContent = '';
+    if(!/^[0-9\-\s+()]{9,}$/.test(phone)){ qmForm.phone.classList.add('is-invalid'); err.textContent = '연락받으실 번호를 입력해 주세요.'; qmForm.phone.focus(); return; }
+    if(!qmForm.agree.checked){ err.textContent = '개인정보 수집·이용에 동의해 주세요.'; return; }
+    var c = qmCombo, btn = qmForm.querySelector('.qm-submit'); btn.disabled = true; btn.textContent = '접수 중…';
+    var services = c.type === 'mix' ? c.items.map(function(it){ return it.name; }) : ['맞춤 견적'];
+    fetch('/api/inquiry', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      office:qmForm.office.value.trim(), phone:phone, field:c.field, services:services, message:comboText(c), agree:true,
+      hp:qmForm.website.value, source:'estimate', combo:c
+    })})
+      .then(function(r){ if(!r.ok) throw new Error('fail'); return r.json(); })
+      .then(function(){
+        document.getElementById('qm-sum-done').innerHTML = comboHTML(c);
+        document.getElementById('qm-done-d').textContent = '확인 후 ' + phone + '로 빠르게 연락드리겠습니다.';
+        document.getElementById('qm-step-form').hidden = true; document.getElementById('qm-step-done').hidden = false;
+        qmForm.reset();
+      })
+      .catch(function(){
+        // 서버 접수가 안 되면 아래 신청서로 안내
+        prefillContact(c); qmClose();
+        var t = document.getElementById('contact'); var y = 0, n = t; while(n){ y += n.offsetTop; n = n.offsetParent; }
+        window.scrollTo({top:y, behavior:reduceMotion ? 'auto' : 'smooth'});
+      })
+      .then(function(){ btn.disabled = false; btn.textContent = '상담 신청하기'; });
   });
   form.addEventListener('submit', function(e){
     e.preventDefault();

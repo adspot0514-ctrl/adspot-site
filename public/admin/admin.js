@@ -62,10 +62,10 @@
     $('#inq-empty').textContent = items.length ? '조건에 맞는 문의가 없습니다.' : '아직 접수된 상담문의가 없습니다.';
     $('#inq-list').innerHTML = list.map(function(i){
       return '<li class="inq' + (i.status === 'new' ? ' is-new' : '') + '" data-id="' + esc(i.id) + '">' +
-        '<div><div class="inq-top"><span class="inq-office">' + esc(i.office || '(사무소명 미입력)') + '</span><span class="pill ' + esc(i.status) + '">' + (ST[i.status] || i.status) + '</span><span class="inq-date">' + fmt(i.createdAt) + '</span></div>' +
+        '<div><div class="inq-top"><span class="inq-office">' + esc(i.office || '(사무소명 미입력)') + '</span><span class="pill ' + esc(i.status) + '">' + (ST[i.status] || i.status) + '</span>' + (i.source === 'estimate' ? '<span class="pill src">견적 조합으로 신청</span>' : '') + '<span class="inq-date">' + fmt(i.createdAt) + '</span></div>' +
         '<dl class="inq-meta"><dt>연락처</dt><dd><a href="tel:' + esc(String(i.phone).replace(/[^0-9+]/g,'')) + '">' + esc(i.phone) + '</a></dd>' +
         '<dt>분야</dt><dd>' + esc(i.field || '-') + '</dd><dt>관심 서비스</dt><dd>' + esc((i.services || []).join(', ') || '-') + '</dd></dl>' +
-        (i.message ? '<p class="inq-msg">' + esc(i.message) + '</p>' : '') + '</div>' +
+        comboHTML(i.combo) + (i.message && !i.combo ? '<p class="inq-msg">' + esc(i.message) + '</p>' : '') + '</div>' +
         '<div class="inq-side"><label>진행 상태</label><select data-act="status">' +
           ['new','contacted','done'].map(function(s){ return '<option value="' + s + '"' + (i.status === s ? ' selected' : '') + '>' + ST[s] + '</option>'; }).join('') +
         '</select><label>메모</label><textarea data-act="memo" placeholder="통화 내용, 다음 연락일 등">' + esc(i.memo || '') + '</textarea>' +
@@ -88,6 +88,15 @@
       api('DELETE', '/admin/inquiries/' + id).then(function(){ items = items.filter(function(x){ return x.id !== id; }); renderInquiries(); toast('삭제했습니다.'); }).catch(function(err){ toast(err.message); });
     }
   });
+  function comboHTML(c){
+    if(!c) return '';
+    var h = '<div class="inq-combo"><div class="ic-head">' + esc(c.type === 'mix' ? (c.field || '분야 미선택') + ' 추천 조합' : '맞춤 견적 · ' + (c.field || '분야 미선택')) + '</div>';
+    if(c.type === 'mix'){
+      (c.items || []).forEach(function(it){ h += '<div class="ic-row"><span>' + esc(it.name) + ' <em>' + it.count + '건 × ' + (+it.price).toLocaleString('ko-KR') + '원</em></span><span>' + (+it.subtotal).toLocaleString('ko-KR') + '원</span></div>'; });
+      h += '<div class="ic-total"><span>월 예상 금액 (부가세 별도)</span><b>' + (+c.total).toLocaleString('ko-KR') + '원</b></div>';
+    } else h += '<div class="ic-row"><span>월 예산</span><span>' + esc(c.budget || '상담 후 결정') + '</span></div>';
+    return h + '</div>';
+  }
   function replace(it){ items = items.map(function(x){ return x.id === it.id ? it : x; }); renderInquiries(); }
   $$('#inq-filter button').forEach(function(b){
     b.addEventListener('click', function(){ filter = b.dataset.f; $$('#inq-filter button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); renderInquiries(); });
@@ -95,9 +104,9 @@
   $('#inq-search').addEventListener('input', function(e){ query = e.target.value.trim(); renderInquiries(); });
   $('#inq-refresh').addEventListener('click', function(){ loadInquiries().then(function(){ toast('새로고침했습니다.'); }); });
   $('#inq-csv').addEventListener('click', function(){
-    var head = ['접수일시','사무소명','연락처','분야','관심 서비스','문의 내용','상태','메모'];
+    var head = ['접수일시','사무소명','연락처','분야','관심 서비스','문의 내용','월 예상 금액','상태','메모'];
     var cell = function(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
-    var rows = items.map(function(i){ return [fmt(i.createdAt), i.office, i.phone, i.field, (i.services || []).join(', '), i.message, ST[i.status] || i.status, i.memo].map(cell).join(','); });
+    var rows = items.map(function(i){ return [fmt(i.createdAt), i.office, i.phone, i.field, (i.services || []).join(', '), i.message, i.combo && i.combo.type === 'mix' ? i.combo.total : '', ST[i.status] || i.status, i.memo].map(cell).join(','); });
     var blob = new Blob(['\ufeff' + [head.map(cell).join(',')].concat(rows).join('\r\n')], {type:'text/csv;charset=utf-8'});
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '애드스팟_상담문의_' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
   });

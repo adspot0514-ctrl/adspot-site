@@ -101,7 +101,7 @@ window.__adspotContent = (function(){
       <div class="st-inner">
         <p class="statement-text" id="statement-text">
           <span class="st-line st-l1"><span class="seg">애드스팟을</span><span class="st-fill" aria-hidden="true"></span></span>
-          <span class="st-line st-l2"><span class="seg">한 번도 만나보지 않은</span><br class="br-m"> <span class="seg">변호사는 있어도</span></span>
+          <span class="st-line st-l2"><span class="seg">한 번도</span><br class="br-m"> <span class="seg">만나보지 않은</span> <span class="seg">변호사는</span><br class="br-m"> <span class="seg">있어도</span></span>
           <span class="st-line st-l3"><span class="seg"><em>한 번만</em> 찾는</span><br class="br-m"> <span class="seg">변호사는 없었습니다.</span></span>
         </p>
         <div class="st-info" aria-hidden="true">
@@ -381,6 +381,34 @@ window.__adspotContent = (function(){
     <span class="mb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="fill" d="M12 4C7 4 3 7.1 3 11c0 2.5 1.7 4.7 4.2 5.9l-.9 3.3c-.1.3.3.6.6.4l3.9-2.6c.4 0 .8.1 1.2.1 5 0 9-3.1 9-7s-4-7.1-9-7.1z"/></svg></span><span class="mb-tx">카톡 상담</span></a>
 </nav>
 
+
+<!-- 견적 조합 빠른 상담 신청 -->
+<div class="qm" id="qm" hidden>
+  <div class="qm-dim" data-qm-close></div>
+  <div class="qm-card" role="dialog" aria-modal="true" aria-labelledby="qm-t">
+    <button type="button" class="qm-x" data-qm-close aria-label="닫기">×</button>
+    <div id="qm-step-form">
+      <p class="qm-k">빠른 상담 신청</p>
+      <h3 class="qm-t" id="qm-t">이 조합으로 상담받기</h3>
+      <div class="qm-sum" id="qm-sum"></div>
+      <form id="qm-form" novalidate>
+        <label class="qm-f"><span>연락처 <b>*</b></span><input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000"></label>
+        <label class="qm-f"><span>사무소명</span><input name="office" type="text" autocomplete="organization" placeholder="예) 법률사무소 애드스팟"></label>
+        <label class="iq-hp" aria-hidden="true">웹사이트<input name="website" type="text" tabindex="-1" autocomplete="off"></label>
+        <label class="qm-agree"><input type="checkbox" name="agree"><span>상담을 위한 개인정보(사무소명·연락처) 수집·이용에 동의합니다. <b>*</b></span></label>
+        <p class="qm-err" id="qm-err" role="alert"></p>
+        <button type="submit" class="qm-submit">상담 신청하기</button>
+      </form>
+    </div>
+    <div id="qm-step-done" hidden>
+      <div class="qm-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h3 class="qm-t">상담 신청이 접수되었습니다</h3>
+      <p class="qm-d" id="qm-done-d">확인 후 입력하신 번호로 빠르게 연락드리겠습니다.</p>
+      <div class="qm-sum" id="qm-sum-done"></div>
+      <button type="button" class="qm-submit" data-qm-close>확인</button>
+    </div>
+  </div>
+</div>
 <script src="content-defaults.js"></script>
 <script src="app.js"></script>
 </body>

@@ -52,6 +52,19 @@ export default async (req: Request, context: Context) => {
     try { return JSON.parse(Buffer.from(payload, "base64url").toString()).exp > Date.now(); } catch { return false; }
   };
   const clip = (v: unknown, n: number) => String(v ?? "").trim().slice(0, n);
+  const int = (v: unknown, max: number) => Math.max(0, Math.min(max, Math.round(Number(v) || 0)));
+  const sanitizeCombo = (c: any) => {
+    if (!c || typeof c !== "object") return null;
+    if (c.type === "mix") {
+      const items = (Array.isArray(c.items) ? c.items : []).slice(0, 6).map((it: any) => ({
+        name: clip(it?.name, 30), count: int(it?.count, 999), price: int(it?.price, 100_000_000),
+        subtotal: int(it?.count, 999) * int(it?.price, 100_000_000),
+      }));
+      return { type: "mix", field: clip(c.field, 40), items, total: items.reduce((a: number, b: any) => a + b.subtotal, 0) };
+    }
+    if (c.type === "custom") return { type: "custom", field: clip(c.field, 40), budget: clip(c.budget, 30) };
+    return null;
+  };
 
   try {
     /* ---------- 공개: 콘텐츠 ---------- */
@@ -86,6 +99,8 @@ export default async (req: Request, context: Context) => {
         field: clip(body.field, 40),
         services: Array.isArray(body.services) ? body.services.slice(0, 6).map((s: unknown) => clip(s, 30)) : [],
         message: clip(body.message, 2000),
+        source: body.source === "estimate" ? "estimate" : "form",
+        combo: sanitizeCombo(body.combo),
         status: "new",
         memo: "",
       };
