@@ -235,6 +235,7 @@
     var isVideo = /^video\//.test(file.type);
     if(!isVideo && !/^image\//.test(file.type)) return Promise.reject(new Error('사진 또는 영상 파일만 올릴 수 있습니다.'));
     if(isVideo && file.size > 25 * 1024 * 1024) return Promise.reject(new Error('영상은 25MB 이하만 올릴 수 있습니다. 길이를 줄이거나 압축해 주세요.'));
+    if(isVideo && file.size > 6 * 1024 * 1024 && !confirm('영상이 ' + (file.size / 1048576).toFixed(1) + 'MB입니다.\n휴대폰에서는 6MB가 넘는 영상이 늦게 뜨거나 멈춰 보일 수 있습니다.\n(권장: 10초 이내, 3~5MB)\n\n그래도 올릴까요?')) return Promise.reject(new Error('업로드를 취소했습니다.'));
     status('준비 중…');
     if(!isVideo){
       return prepareImage(file, opt).then(function(b){

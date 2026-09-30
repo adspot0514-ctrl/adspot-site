@@ -65,7 +65,7 @@ var __adspotStart = function(C){
         node.setAttribute('muted', ''); node.setAttribute('playsinline', ''); node.preload = 'none';
         if(m.poster) node.poster = m.poster;
         node.src = m.url;
-        if(el.closest('.sc-media')){ node.loop = true; node.autoplay = true; node.setAttribute('autoplay', ''); }   // 쇼케이스 영상은 반복
+        node.loop = true; node.autoplay = true; node.setAttribute('autoplay', ''); node.setAttribute('loop', ''); node.preload = 'auto';   // 아이폰: 자동 재생 표시가 있어야 보일 때 확실히 재생
       } else {
         node = document.createElement('img'); node.alt = ''; node.src = m.url; node.decoding = 'async';
       }
@@ -191,37 +191,20 @@ var __adspotStart = function(C){
   slides.forEach(function(s, k){ var v = s.querySelector('video'); if(v && v.getAttribute('data-custom')) delete RANGE[k]; });   // 관리자에서 올린 영상은 처음부터
   function rangeOf(idx){ return RANGE[idx] || [0, VIDEO_MAX]; }
   if(!IS_MO) slides.forEach(function(s){ var v = s.querySelector('video'); if(v && v.dataset.pcPoster) v.poster = v.dataset.pcPoster; });
-  var step = 0, photoTimer = null, primeTimer = null, waitTimer = null;
-  // 다음 영상을 보이지 않는 뒤쪽에서 미리 재생 (휴대폰은 재생 전까지 영상을 받지 않음)
-  function prime(idx){
-    var v = slides[idx].querySelector('video');
-    if(!v || v.dataset.primed === '1') return;
-    v.dataset.primed = '1';
-    v.muted = true; v.preload = 'auto';
-    var start = rangeOf(idx)[0];
-    // 곧바로 재생을 걸어 휴대폰이 영상을 받기 시작하게 하고, 시작 위치는 정보가 오는 대로 맞춤
-    var seek = function(){ try{ if(Math.abs(v.currentTime - start) > .3) v.currentTime = start; }catch(e){} };
-    if(v.readyState >= 1) seek(); else v.addEventListener('loadedmetadata', seek, {once:true});
-    var p = v.play(); if(p && p.catch) p.catch(function(){});
-  }
-  function nextIdx(){ return ORDER[(step + 1) % ORDER.length]; }
-  function schedulePrime(ms){ clearTimeout(primeTimer); primeTimer = setTimeout(function(){ prime(nextIdx()); }, Math.max(0, ms)); }
+  var step = 0, photoTimer = null;
+  // 아이폰에서 가장 확실한 방식: 영상은 모두 autoplay·loop·muted로 두고(보일 때 기기가 알아서 재생),
+  // 장면 전환은 재생 여부와 상관없이 시간 기준으로 진행
   function heroShow(idx){
-    slides.forEach(function(s, k){
-      var on = k === idx;
-      s.classList.toggle('is-active', on);
-      var v = s.querySelector('video');
-      if(v && !on && v.dataset.primed !== '1'){ setTimeout(function(){ if(!s.classList.contains('is-active') && v.dataset.primed !== '1') v.pause(); }, 1300); }
-    });
-    clearTimeout(photoTimer);
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === idx); });
     var v = slides[idx].querySelector('video');
-    if(!v){ photoTimer = setTimeout(next, PHOTO_MS); schedulePrime(PHOTO_MS - 1800); }
+    var rg = rangeOf(idx);
+    var dur = v ? Math.max(3500, (rg[1] - rg[0] - .6) * 1000) : PHOTO_MS;
+    clearTimeout(photoTimer); photoTimer = setTimeout(next, dur);
     // 배경 진행 표시 (01 / 03)
     var hsCur = document.getElementById('hs-cur'), hsBars = document.querySelectorAll('.hs-bars i');
     if(hsCur){
       var di = DISP[idx];
       hsCur.textContent = '0' + (di + 1);
-      var rg = rangeOf(idx); var dur = v ? (rg[1] - rg[0] - .6) * 1000 : PHOTO_MS;
       hsBars.forEach(function(b, k){
         b.classList.remove('on'); void b.offsetWidth;
         b.classList.toggle('done', k < di);
@@ -229,52 +212,26 @@ var __adspotStart = function(C){
       });
     }
   }
-  function activate(idx){
-    clearTimeout(waitTimer);
-    var s = slides[idx], v = s.querySelector('video');
-    if(!v){ heroShow(idx); return; }
-    var rg = rangeOf(idx);
-    var playing = !v.paused && v.readyState >= 3 && v.currentTime >= rg[0] - .1 && v.currentTime < rg[0] + 2.5;
-    if(!playing){
-      try{ v.currentTime = rg[0]; }catch(e){}
-      var pr = v.play(); if(pr && pr.catch) pr.catch(function(){ /* 자동재생 차단 시 포스터 유지 */ heroShow(idx); setTimeout(next, PHOTO_MS); });
-    }
-    v.dataset.primed = '0';
-    if(v.readyState >= 3 && !v.paused){ heroShow(idx); ensurePlay(idx); return; }
-    // 영상이 실제로 움직이기 시작할 때까지 이전 장면 유지 (최대 1.5초)
-    var done = false, fin = function(){ if(done) return; done = true; v.removeEventListener('playing', fin); heroShow(idx); ensurePlay(idx); };
-    v.addEventListener('playing', fin);
-    waitTimer = setTimeout(fin, 1500);
-  }
-  // 아이폰은 화면에 보이지 않는 영상의 자동 재생을 멈춤 → 장면이 보인 뒤 다시 재생을 걸고,
-  // 끝내 재생되지 않는 기기(저전력 모드 등)에서는 정지 화면을 잠시 보여준 뒤 다음 장면으로
+  // 장면이 보이는 순간 처음 구간부터 재생 (거절되면 조용히 넘어가고, 몇 번 더 시도)
   function ensurePlay(idx){
     var s = slides[idx], v = s.querySelector('video'); if(!v) return;
+    try{ if(v.readyState >= 1) v.currentTime = rangeOf(idx)[0]; }catch(e){}
     var tries = 0;
     (function kick(){
       if(!s.classList.contains('is-active')) return;
-      if(!v.paused && v.readyState >= 2) return;
+      if(!v.paused) return;
       var p = v.play(); if(p && p.catch) p.catch(function(){});
-      if(++tries < 4){ setTimeout(kick, 700); return; }
-      if(v.paused){ clearTimeout(photoTimer); photoTimer = setTimeout(function(){ if(s.classList.contains('is-active') && v.paused) next(); }, 2000); }
+      if(++tries < 5) setTimeout(kick, 600);
     })();
   }
+  function activate(idx){ heroShow(idx); ensurePlay(idx); }
   function next(){ step = (step + 1) % ORDER.length; activate(ORDER[step]); }
-  slides.forEach(function(s){
-    var v = s.querySelector('video');
-    if(!v) return;
-    var fired = false, primedNext = false;
-    v.addEventListener('play', function(){ if(s.classList.contains('is-active')){ fired = false; primedNext = false; } });
-    v.addEventListener('timeupdate', function(){
-      if(!s.classList.contains('is-active')) return;
-      var end = Math.min(v.duration - FADE_LEAD, rangeOf([].indexOf.call(slides, s))[1] - .6);
-      if(!primedNext && v.duration && v.currentTime >= end - 1.8){ primedNext = true; prime(nextIdx()); }
-      if(!fired && v.duration && v.currentTime >= end){ fired = true; next(); }
-    });
-    v.addEventListener('ended', function(){ if(!fired && s.classList.contains('is-active')){ fired = true; next(); } });
+  // 영상이 뒤늦게 준비되면 바로 재생
+  slides.forEach(function(s, k){
+    var v = s.querySelector('video'); if(!v) return;
+    ['loadeddata','canplay'].forEach(function(ev){ v.addEventListener(ev, function(){ if(s.classList.contains('is-active') && v.paused){ var p = v.play(); if(p && p.catch) p.catch(function(){}); } }); });
   });
   slides.forEach(function(s, k){ s.classList.toggle('is-active', k === ORDER[0]); });
-  [ORDER[0], ORDER[1]].forEach(function(k){ var fv = slides[k].querySelector('video'); if(fv) fv.preload = 'auto'; });   // 다음 영상 미리 불러오기
   if(slides.length > 1 && !reduceMotion) activate(ORDER[0]);
 
   /* 야경 톤일 때 히어로 위 헤더를 어둡게 */
@@ -290,7 +247,7 @@ var __adspotStart = function(C){
   var root = document.documentElement;
   var heroVideos = document.querySelectorAll('.hero-media video');
   function loadHeroVideos(){
-    heroVideos.forEach(function(v){ if(v.preload !== 'auto'){ v.preload = 'auto'; try{ v.load(); }catch(e){} } });
+    heroVideos.forEach(function(v){ if(v.paused && v.closest('.hero-slide.is-active')){ var p = v.play(); if(p && p.catch) p.catch(function(){}); } });
   }
   if(root.classList.contains('has-intro')){
     var ended = false;
