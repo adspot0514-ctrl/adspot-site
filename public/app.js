@@ -27,6 +27,66 @@ var __adspotStart = function(C){
     });
   })();
 
+  /* ---------------- 관리자 콘텐츠: 문구 · 헤드라인 · 이미지/영상 · 포트폴리오 ---------------- */
+  // [ ] 로 감싼 부분은 강조, 줄바꿈은 그대로
+  var rich = function(s, cls){ return esc(s).replace(/\[([^\]]+)\]/g, '<em class="' + (cls || 'hl-em') + '">$1</em>').replace(/\n/g, '<br>'); };
+  (function(){
+    var TX = C.texts || {}, DT = D.texts || {};
+    document.querySelectorAll('[data-edit]').forEach(function(el){
+      var k = el.getAttribute('data-edit'), v = TX[k];
+      if(!has(v) || v === DT[k]) return;                     // 바꾸지 않은 문구는 원래 모양(반응형 줄바꿈) 유지
+      el.innerHTML = rich(v, el.getAttribute('data-hl'));
+    });
+    // 메인 헤드라인 (PC / 모바일)
+    var HH = C.heroHeadline || {}, DH = D.heroHeadline || {};
+    var buildLines = function(txt){
+      return String(txt).split('\n').filter(function(l){ return l.trim(); }).map(function(l){
+        return '<span class="hl-line"><span>' + esc(l.trim()).replace(/\[([^\]]+)\]/g, '<span class="hl">$1</span>') + '</span></span>';
+      }).join('');
+    };
+    var plain = function(txt){ return String(txt).replace(/[\[\]]/g, '').replace(/\s*\n\s*/g, ' ').trim(); };
+    var pcT = has(HH.headlinePc) && HH.headlinePc !== DH.headlinePc ? HH.headlinePc : null;
+    var moT = has(HH.headlineMo) && HH.headlineMo !== DH.headlineMo ? HH.headlineMo : null;
+    var ht = document.querySelector('.hero-title');
+    if(ht && (pcT || moT)){
+      if(pcT) ht.querySelector('.ht-pc').innerHTML = buildLines(pcT);
+      if(moT) ht.querySelector('.ht-mo').innerHTML = buildLines(moT);
+      ht.setAttribute('aria-label', plain(pcT || moT));
+    }
+    // 이미지 / 영상 교체
+    var MD = C.media || {};
+    document.querySelectorAll('[data-media]').forEach(function(el){
+      var k = el.getAttribute('data-media'), m = MD[k];
+      if(!m || !m.url || (D.media && D.media[k] && D.media[k].url === m.url)) return;
+      var node;
+      if(m.type === 'video'){
+        node = document.createElement('video');
+        node.muted = true; node.defaultMuted = true; node.playsInline = true;
+        node.setAttribute('muted', ''); node.setAttribute('playsinline', ''); node.preload = 'none';
+        if(m.poster) node.poster = m.poster;
+        node.src = m.url;
+        if(el.closest('.sc-media')){ node.loop = true; node.autoplay = true; node.setAttribute('autoplay', ''); }   // 쇼케이스 영상은 반복
+      } else {
+        node = document.createElement('img'); node.alt = ''; node.src = m.url; node.decoding = 'async';
+      }
+      node.setAttribute('data-media', k); node.setAttribute('data-custom', '1');
+      el.parentNode.replaceChild(node, el);
+    });
+    // 포트폴리오 로고
+    var PF = has(C.portfolio) ? C.portfolio.filter(function(p){ return p && p.url; }) : null;
+    if(PF && PF.length && JSON.stringify(PF) !== JSON.stringify(D.portfolio)){
+      var li = function(p, hidden){ return '<li><img src="' + esc(p.url) + '" alt="' + (hidden ? '' : esc(p.name || '')) + '" loading="lazy" decoding="async"></li>'; };
+      var group = function(list){ return '<ul class="marquee-group">' + list.map(function(p){ return li(p); }).join('') + '</ul><ul class="marquee-group" aria-hidden="true">' + list.map(function(p){ return li(p, true); }).join('') + '</ul>'; };
+      var pc = document.querySelector('.marquee-pc');
+      if(pc) pc.innerHTML = '<div class="marquee-track">' + group(PF) + '</div>';
+      var mo = document.querySelector('.marquee-mo');
+      if(mo){
+        var half = Math.ceil(PF.length / 2), a = PF.slice(0, half), b = PF.slice(half);
+        mo.innerHTML = '<div class="marquee-track">' + group(a) + '</div>' + (b.length ? '<div class="marquee-track is-reverse">' + group(b) + '</div>' : '');
+      }
+    }
+  })();
+
   /* ---------------- 헤더 / 메뉴 ---------------- */
   var header = document.querySelector('.header');
   var nav = document.getElementById('nav');
@@ -128,6 +188,7 @@ var __adspotStart = function(C){
   var DISP = {}; ORDER.forEach(function(s){ if(!(s in DISP)) DISP[s] = Object.keys(DISP).length; });
   // 영상별 재생 구간 [시작, 끝] (초) — PC 타임랩스는 시계탑 전체가 보이는 넓은 장면 위주
   var RANGE = {0:[0.2,5.4], 1:[0.1,5.6]};   // 0: 도심 야경, 1: 법원 야경
+  slides.forEach(function(s, k){ var v = s.querySelector('video'); if(v && v.getAttribute('data-custom')) delete RANGE[k]; });   // 관리자에서 올린 영상은 처음부터
   function rangeOf(idx){ return RANGE[idx] || [0, VIDEO_MAX]; }
   if(!IS_MO) slides.forEach(function(s){ var v = s.querySelector('video'); if(v && v.dataset.pcPoster) v.poster = v.dataset.pcPoster; });
   var step = 0, photoTimer = null, primeTimer = null, waitTimer = null;
@@ -179,11 +240,24 @@ var __adspotStart = function(C){
       var pr = v.play(); if(pr && pr.catch) pr.catch(function(){ /* 자동재생 차단 시 포스터 유지 */ heroShow(idx); setTimeout(next, PHOTO_MS); });
     }
     v.dataset.primed = '0';
-    if(v.readyState >= 3 && !v.paused){ heroShow(idx); return; }
+    if(v.readyState >= 3 && !v.paused){ heroShow(idx); ensurePlay(idx); return; }
     // 영상이 실제로 움직이기 시작할 때까지 이전 장면 유지 (최대 1.5초)
-    var done = false, fin = function(){ if(done) return; done = true; v.removeEventListener('playing', fin); heroShow(idx); };
+    var done = false, fin = function(){ if(done) return; done = true; v.removeEventListener('playing', fin); heroShow(idx); ensurePlay(idx); };
     v.addEventListener('playing', fin);
     waitTimer = setTimeout(fin, 1500);
+  }
+  // 아이폰은 화면에 보이지 않는 영상의 자동 재생을 멈춤 → 장면이 보인 뒤 다시 재생을 걸고,
+  // 끝내 재생되지 않는 기기(저전력 모드 등)에서는 정지 화면을 잠시 보여준 뒤 다음 장면으로
+  function ensurePlay(idx){
+    var s = slides[idx], v = s.querySelector('video'); if(!v) return;
+    var tries = 0;
+    (function kick(){
+      if(!s.classList.contains('is-active')) return;
+      if(!v.paused && v.readyState >= 2) return;
+      var p = v.play(); if(p && p.catch) p.catch(function(){});
+      if(++tries < 4){ setTimeout(kick, 700); return; }
+      if(v.paused){ clearTimeout(photoTimer); photoTimer = setTimeout(function(){ if(s.classList.contains('is-active') && v.paused) next(); }, 2000); }
+    })();
   }
   function next(){ step = (step + 1) % ORDER.length; activate(ORDER[step]); }
   slides.forEach(function(s){
@@ -392,7 +466,7 @@ var __adspotStart = function(C){
     };
     // 쇼케이스에 가까워지면 영상 미리 받기
     // 시계탑 영상: 밝은 시계 구간(0.2~4초)만 반복 — 끝부분의 어두워지는 구간은 재생하지 않음
-    if(scV3){
+    if(scV3 && !scV3.getAttribute('data-custom')){
       var LOOP_A = 0.2, LOOP_B = 4.0;
       var clampLoop = function(){ if(scV3.currentTime >= LOOP_B || scV3.currentTime < LOOP_A - .1){ try{ scV3.currentTime = LOOP_A; }catch(e){} } };
       scV3.addEventListener('timeupdate', clampLoop);

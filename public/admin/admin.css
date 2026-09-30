@@ -122,3 +122,33 @@ button,input,select,textarea{font:inherit;color:inherit}
 .ic-row em{font-style:normal;color:var(--muted)}
 .ic-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:8px;border-top:1px solid #f1dcc9;font-weight:800}
 .ic-total b{color:var(--gold-deep);font-size:16px}
+
+/* 사진 · 영상 올리기 */
+.sub-h{margin:6px 0 0;font-size:14px;font-weight:800}
+.sub-h em{font-style:normal;font-weight:500;color:var(--muted);margin-left:6px;font-size:13px}
+.hint.small{font-size:13px;margin:0}
+.media{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fcfbf9;display:grid;gap:10px}
+.m-label{font-size:13px;font-weight:800;color:var(--ink-2)}
+.m-prev{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#1b1f26;display:grid;place-items:center}
+.m-prev img,.m-prev video{width:100%;height:100%;object-fit:cover;display:block}
+.m-badge{position:absolute;left:8px;top:8px;font-size:11px;font-weight:800;color:#fff;background:rgba(0,0,0,.55);padding:3px 8px;border-radius:99px}
+.m-empty{color:#9aa0aa;font-size:13px}
+.m-act{display:flex;gap:8px;flex-wrap:wrap}
+.m-act .btn{height:38px;display:inline-flex;align-items:center}
+label.btn{display:inline-flex;align-items:center;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:default}
+.m-status{font-size:12.5px;font-weight:700;color:var(--gold-deep);min-height:16px}
+.grid-media{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.grid-media>div{display:grid;gap:10px}
+/* 포트폴리오 로고 */
+.pf-row{display:grid;grid-template-columns:160px 1fr auto auto auto;gap:10px;align-items:end;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fcfbf9}
+.pf-logo{height:48px;border-radius:8px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;padding:6px}
+.pf-logo img{max-width:100%;max-height:100%;object-fit:contain}
+.pf-row .m-status{grid-column:1/-1;min-height:0}
+.pf-row .btn,.pf-row .icon-btn{height:40px}
+.pf-row [data-pf-up]{color:var(--ink-2)}
+@media (max-width:860px){
+  .grid-media{grid-template-columns:1fr}
+  .pf-row{grid-template-columns:1fr auto auto auto}
+  .pf-row .pf-logo{grid-column:1/-1}
+}

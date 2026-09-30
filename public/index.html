@@ -68,8 +68,8 @@ window.__adspotContent = (function(){
   <section class="screen hero hero--night" id="main">
     <!-- 메인 배경: 로고 모션 → 법원 야경 영상 → 도심 야경 영상 -->
     <div class="hero-media" aria-hidden="true">
-      <div class="hero-slide is-city"><video muted playsinline preload="none" poster="assets/hero/city_night_poster.jpg" src="assets/hero/city_night.mp4"></video></div>
-      <div class="hero-slide is-courtnight"><video muted playsinline preload="none" poster="assets/hero/court_night_poster.jpg" src="assets/hero/court_night.mp4"></video></div>
+      <div class="hero-slide is-city"><video muted playsinline preload="none" poster="assets/hero/city_night_poster.jpg" src="assets/hero/city_night.mp4" data-media="hero.city"></video></div>
+      <div class="hero-slide is-courtnight"><video muted playsinline preload="none" poster="assets/hero/court_night_poster.jpg" src="assets/hero/court_night.mp4" data-media="hero.court"></video></div>
       <div class="hero-slide is-emblem is-active">
         <div class="em-stage">
           <img class="em-court" src="assets/ci/court_emblem.png" alt="" width="732" height="684">
@@ -110,7 +110,7 @@ window.__adspotContent = (function(){
           <span class="si-pt" style="--i:1"><i></i><em>한 달의 결과</em></span>
           <span class="si-pt is-key" style="--i:2"><i></i><em>재계약</em></span>
         </div>
-        <p class="st-sub"><span>장기 계약으로 묶어두지 않습니다.</span><span>매달 다시 선택받는 광고,</span><span>그 결과가 곧 애드스팟입니다.</span></p>
+        <p class="st-sub"><span data-edit="st.sub1">장기 계약으로 묶어두지 않습니다.</span><span data-edit="st.sub2">매달 다시 선택받는 광고,</span><span data-edit="st.sub3">그 결과가 곧 애드스팟입니다.</span></p>
       </div>
     </div>
   </section>
@@ -119,20 +119,20 @@ window.__adspotContent = (function(){
   <section class="screen identity" id="identity">
     <div class="wrap identity-grid">
       <div class="identity-copy reveal">
-        <p class="kicker">애드스팟</p>
-        <h2 class="h2">1개월 단위 계약으로<br>현재까지 연속 진행중</h2>
-        <p class="lead">장기 계약으로 묶어두지 않습니다. 매달 다시 선택받아야 이어지는 구조이기에, 함께한 시간이 곧 결과에 대한 평가입니다.</p>
+        <p class="kicker" data-edit="id.kicker">애드스팟</p>
+        <h2 class="h2" data-edit="id.title">1개월 단위 계약으로<br>현재까지 연속 진행중</h2>
+        <p class="lead" data-edit="id.lead">장기 계약으로 묶어두지 않습니다. 매달 다시 선택받아야 이어지는 구조이기에, 함께한 시간이 곧 결과에 대한 평가입니다.</p>
         <dl class="facts">
-          <div><dt>2015</dt><dd>법무법인 내부 홍보팀에서 시작</dd></div>
-          <div><dt>2017</dt><dd>애드스팟 법률마케팅 서비스 시작</dd></div>
-          <div><dt>매월</dt><dd>재계약으로 이어지는 파트너십</dd></div>
+          <div><dt data-edit="id.f1y">2015</dt><dd data-edit="id.f1">법무법인 내부 홍보팀에서 시작</dd></div>
+          <div><dt data-edit="id.f2y">2017</dt><dd data-edit="id.f2">애드스팟 법률마케팅 서비스 시작</dd></div>
+          <div><dt data-edit="id.f3y">매월</dt><dd data-edit="id.f3">재계약으로 이어지는 파트너십</dd></div>
         </dl>
       </div>
 
       <div class="clock reveal" id="time" aria-label="파트너별 함께한 시간">
         <div class="clock-head">
-          <p class="clock-title">함께하는 시간</p>
-          <p class="clock-sub">계약 시작일부터 지금까지, 한 번도 멈추지 않은 시간</p>
+          <p class="clock-title" data-edit="clock.title">함께하는 시간</p>
+          <p class="clock-sub" data-edit="clock.sub">계약 시작일부터 지금까지, 한 번도 멈추지 않은 시간</p>
         </div>
         <ol class="clock-list" id="clock-list"></ol>
         <button class="clock-more" id="clock-more" type="button" hidden>전체 보기</button>
@@ -144,8 +144,8 @@ window.__adspotContent = (function(){
   <section class="screen stories" id="stories">
     <div class="wrap">
       <div class="stories-head reveal">
-        <p class="kicker">성장 이야기</p>
-        <h2 class="h2">여전히 애드스팟과 함께하고 있습니다.</h2>
+        <p class="kicker" data-edit="stories.kicker">성장 이야기</p>
+        <h2 class="h2" data-edit="stories.title">여전히 애드스팟과 함께하고 있습니다.</h2>
       </div>
 
       <div class="story reveal" id="story" aria-roledescription="carousel" aria-label="성장 이야기">
@@ -200,18 +200,18 @@ window.__adspotContent = (function(){
   <!-- 스크롤 쇼케이스: 서초동, 법조의 중심에서 (포트폴리오 아래) -->
   <section class="showcase" id="showcase" aria-label="애드스팟 이야기">
     <div class="sc-stage">
-      <p class="sc-intro"><span>서초동,</span><span>법조의 중심에서</span></p>
+      <p class="sc-intro"><span data-edit="sc.intro1">서초동,</span><span data-edit="sc.intro2">법조의 중심에서</span></p>
       <div class="sc-layer sc-l1">
-        <div class="sc-media"><img src="assets/hero/court_angle.jpg" alt="" width="1200" height="800"></div>
-        <div class="sc-cap"><p class="sc-year">2015</p><p class="sc-text">법무법인 내부 홍보팀에서<br>시작했습니다.</p></div>
+        <div class="sc-media"><img src="assets/hero/court_angle.jpg" alt="" width="1200" height="800" data-media="sc.m1"></div>
+        <div class="sc-cap"><p class="sc-year" data-edit="sc.y1">2015</p><p class="sc-text" data-edit="sc.t1">법무법인 내부 홍보팀에서<br>시작했습니다.</p></div>
       </div>
       <div class="sc-layer sc-l2">
-        <div class="sc-media"><img src="assets/hero/partner_towers.jpg" alt="" width="2400" height="1600"></div>
-        <div class="sc-cap"><p class="sc-year">2017</p><p class="sc-text">변호사님들의 파트너,<br>애드스팟이 되었습니다.</p></div>
+        <div class="sc-media"><img src="assets/hero/partner_towers.jpg" alt="" width="2400" height="1600" data-media="sc.m2"></div>
+        <div class="sc-cap"><p class="sc-year" data-edit="sc.y2">2017</p><p class="sc-text" data-edit="sc.t2">변호사님들의 파트너,<br>애드스팟이 되었습니다.</p></div>
       </div>
       <div class="sc-layer sc-l3">
-        <div class="sc-media"><video muted playsinline preload="none" poster="assets/hero/court_timelapse_poster.jpg" src="assets/hero/court_timelapse.mp4"></video></div>
-        <div class="sc-cap"><p class="sc-year">지금</p><p class="sc-text">1개월 단위 계약으로,<br>결과로 신뢰를 쌓아갑니다.</p></div>
+        <div class="sc-media"><video muted playsinline preload="none" poster="assets/hero/court_timelapse_poster.jpg" src="assets/hero/court_timelapse.mp4" data-media="sc.m3"></video></div>
+        <div class="sc-cap"><p class="sc-year" data-edit="sc.y3">지금</p><p class="sc-text" data-edit="sc.t3">1개월 단위 계약으로,<br>결과로 신뢰를 쌓아갑니다.</p></div>
       </div>
       <div class="sc-progress" aria-hidden="true"><i></i><i></i><i></i></div>
     </div>
@@ -221,18 +221,18 @@ window.__adspotContent = (function(){
   <section class="screen why" id="why" aria-label="왜 애드스팟인가">
     <div class="wrap why-grid">
       <div class="why-intro">
-        <p class="kicker">왜 애드스팟인가</p>
+        <p class="kicker" data-edit="why.kicker">왜 애드스팟인가</p>
         <p class="why-count" aria-label="변호사 4만명"><span class="why-num" id="why-num">40,000</span><span class="why-unit">명</span></p>
-        <p class="why-era">변호사 4만명 시대,</p>
+        <p class="why-era" data-edit="why.era">변호사 4만명 시대,</p>
         <ol class="journey" aria-label="성장 경로">
-          <li><span class="jd" aria-hidden="true"></span><div><b>홀로 개업</b><small>변호사 1인 사무소에서</small></div></li>
-          <li><span class="jd" aria-hidden="true"></span><div><b>30–50인 규모 법무법인</b><small>구성원·직원과 함께하는 조직으로</small></div></li>
-          <li class="is-gold"><span class="jd" aria-hidden="true"></span><div><b>소득 상위 10% 대표변호사</b><small>블로그 마케팅으로 <em class="one-year">단 1년</em></small></div></li>
+          <li><span class="jd" aria-hidden="true"></span><div><b data-edit="why.j1">홀로 개업</b><small data-edit="why.j1s">변호사 1인 사무소에서</small></div></li>
+          <li><span class="jd" aria-hidden="true"></span><div><b data-edit="why.j2">30–50인 규모 법무법인</b><small data-edit="why.j2s">구성원·직원과 함께하는 조직으로</small></div></li>
+          <li class="is-gold"><span class="jd" aria-hidden="true"></span><div><b data-edit="why.j3">소득 상위 10% 대표변호사</b><small data-edit="why.j3s" data-hl="one-year">블로그 마케팅으로 <em class="one-year">단 1년</em></small></div></li>
         </ol>
-        <p class="why-quote"><span aria-hidden="true">“</span>법률 전문 애드스팟에서만 가능합니다.<span aria-hidden="true">”</span></p>
+        <p class="why-quote"><span aria-hidden="true">“</span><span data-edit="why.quote">법률 전문 애드스팟에서만 가능합니다.</span><span aria-hidden="true">”</span></p>
       </div>
       <div class="why-chat">
-        <h3 class="why-q">어떤 마케팅을 원하시나요?</h3>
+        <h3 class="why-q" data-edit="why.q">어떤 마케팅을 원하시나요?</h3>
         <div class="why-seg" id="why-tabs" role="tablist" aria-label="고민 사례"></div>
         <div class="phone-stage">
           <div class="phone" aria-label="상담 대화 예시">
@@ -255,8 +255,8 @@ window.__adspotContent = (function(){
   <section class="screen pricing" id="pricing">
     <div class="wrap">
       <div class="pricing-head reveal">
-        <p class="kicker">가격안내</p>
-        <h2 class="h2">분야에 맞게,<br class="br-mo"> 시기에 맞게 추천드립니다.</h2>
+        <p class="kicker" data-edit="pr.kicker">가격안내</p>
+        <h2 class="h2" data-edit="pr.title">분야에 맞게,<br class="br-mo"> 시기에 맞게 추천드립니다.</h2>
       </div>
       <div class="pricing-grid">
         <ul class="price-list reveal" id="price-list"></ul>
@@ -276,7 +276,7 @@ window.__adspotContent = (function(){
               <a class="btn btn-dark est-cta" href="#contact">이 조합으로 상담하기</a>
             </div>
             <div class="est-panel" data-panel="custom" hidden>
-              <p class="est-custom-lead">상품을 따로 고르지 않아도 됩니다. 분야와 월 예산만 알려주시면 카페·인플루언서·준최적화 블로그를 가장 효과적으로 조합해 견적을 드립니다.</p>
+              <p class="est-custom-lead" data-edit="pr.custom">상품을 따로 고르지 않아도 됩니다. 분야와 월 예산만 알려주시면 카페·인플루언서·준최적화 블로그를 가장 효과적으로 조합해 견적을 드립니다.</p>
               <p class="est-q">분야</p>
               <div class="chips" id="cq-field"></div>
               <p class="est-q">월 예산 <span>부가세 별도</span></p>
@@ -295,18 +295,18 @@ window.__adspotContent = (function(){
   <section class="screen contact" id="contact">
     <div class="wrap contact-inner">
       <div class="contact-copy reveal">
-        <p class="kicker">상담문의</p>
-        <h2 class="h2">지금 우리 로펌에 맞는<br class="br-mo"> 마케팅이<br class="br-pc"> 무엇인지부터<br class="br-mo"> 진단해 드립니다.</h2>
-        <p class="lead">분야, 지역, 현재 운영 중인 채널을 알려주시면 1개월 단위로 시작할 수 있는 방안을 제안드립니다.</p>
+        <p class="kicker" data-edit="ct.kicker">상담문의</p>
+        <h2 class="h2" data-edit="ct.title">지금 우리 로펌에 맞는<br class="br-mo"> 마케팅이<br class="br-pc"> 무엇인지부터<br class="br-mo"> 진단해 드립니다.</h2>
+        <p class="lead" data-edit="ct.lead">분야, 지역, 현재 운영 중인 채널을 알려주시면 1개월 단위로 시작할 수 있는 방안을 제안드립니다.</p>
         <ol class="cflow" aria-label="상담 진행 순서">
-          <li><span>01</span><div><b>문의 접수</b><small>전화·카톡·신청서 중 편한 방법으로</small></div></li>
-          <li><span>02</span><div><b>현황 진단</b><small>분야와 지역, 현재 채널의 노출 상태 확인</small></div></li>
-          <li><span>03</span><div><b>1개월 단위 제안</b><small>한 달부터 시작하고, 결과로 다음 달 결정</small></div></li>
+          <li><span>01</span><div><b data-edit="ct.f1">문의 접수</b><small data-edit="ct.f1s">전화·카톡·신청서 중 편한 방법으로</small></div></li>
+          <li><span>02</span><div><b data-edit="ct.f2">현황 진단</b><small data-edit="ct.f2s">분야와 지역, 현재 채널의 노출 상태 확인</small></div></li>
+          <li><span>03</span><div><b data-edit="ct.f3">1개월 단위 제안</b><small data-edit="ct.f3s">한 달부터 시작하고, 결과로 다음 달 결정</small></div></li>
         </ol>
         <ul class="trust">
-          <li>2015년 법무법인 내부 홍보팀에서 출발</li>
-          <li>법률 분야만 전문으로</li>
-          <li>1개월 단위 계약</li>
+          <li data-edit="ct.t1">2015년 법무법인 내부 홍보팀에서 출발</li>
+          <li data-edit="ct.t2">법률 분야만 전문으로</li>
+          <li data-edit="ct.t3">1개월 단위 계약</li>
         </ul>
       </div>
 

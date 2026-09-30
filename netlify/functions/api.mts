@@ -32,6 +32,8 @@ export default async (req: Request, context: Context) => {
   const prefix = isProd ? "" : "preview-";
   const contentStore = () => getStore({ name: prefix + "site-content", consistency: "strong" });
   const inquiryStore = () => getStore({ name: prefix + "inquiries", consistency: "strong" });
+  const mediaStore = () => getStore({ name: prefix + "media", consistency: "strong" });
+  const tmpStore = () => getStore({ name: prefix + "upload-tmp", consistency: "strong" });
 
   const password = Netlify.env.get("ADMIN_PASSWORD") || "";
   const secret = Netlify.env.get("ADMIN_SECRET") || password;
@@ -108,6 +110,37 @@ export default async (req: Request, context: Context) => {
       return json({ ok: true, id });
     }
 
+    /* ---------- 공개: 관리자에서 올린 이미지·영상 ---------- */
+    const mm = path.match(/^\/api\/media\/([a-z0-9]{8,40}\.(?:jpg|png|webp|gif|mp4|webm|mov))$/);
+    if (mm && (method === "GET" || method === "HEAD")) {
+      const got: any = await mediaStore().getWithMetadata(mm[1], { type: "arrayBuffer" });
+      if (!got || !got.data) return new Response("not found", { status: 404 });
+      const buf = new Uint8Array(got.data as ArrayBuffer);
+      const type = String(got.metadata?.type || "application/octet-stream");
+      const base: Record<string, string> = {
+        "Content-Type": type,
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "public, max-age=31536000, immutable",
+      };
+      const range = req.headers.get("range");
+      const rm = range && range.match(/bytes=(\d*)-(\d*)/);
+      if (rm && (rm[1] || rm[2])) {
+        // 아이폰 사파리는 영상을 구간(Range)으로 요청함
+        let start = rm[1] ? parseInt(rm[1], 10) : buf.length - parseInt(rm[2], 10);
+        let end = rm[1] && rm[2] ? parseInt(rm[2], 10) : buf.length - 1;
+        start = Math.max(0, start); end = Math.min(buf.length - 1, end, start + 4 * 1024 * 1024 - 1);   // 한 번에 최대 4MB (함수 응답 한도 6MB)
+        if (start > end) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${buf.length}` } });
+        const part = buf.subarray(start, end + 1);
+        return new Response(method === "HEAD" ? null : part, { status: 206, headers: { ...base, "Content-Range": `bytes ${start}-${end}/${buf.length}`, "Content-Length": String(part.length) } });
+      }
+      if (buf.length > 5_500_000 && method !== "HEAD") {
+        // 큰 파일은 첫 4MB만 보내고 나머지는 브라우저가 이어서 요청
+        const part = buf.subarray(0, 4 * 1024 * 1024);
+        return new Response(part, { status: 206, headers: { ...base, "Content-Range": `bytes 0-${part.length - 1}/${buf.length}`, "Content-Length": String(part.length) } });
+      }
+      return new Response(method === "HEAD" ? null : buf, { status: 200, headers: { ...base, "Content-Length": String(buf.length), "Netlify-CDN-Cache-Control": "public, max-age=31536000, immutable" } });
+    }
+
     /* ---------- 관리자 로그인 ---------- */
     if (path === "/api/admin/login" && method === "POST") {
       if (!password) return json({ ok: false, error: "관리자 비밀번호가 아직 설정되지 않았습니다." }, 503);
@@ -144,6 +177,41 @@ export default async (req: Request, context: Context) => {
           rec.updatedAt = new Date().toISOString();
           await store.setJSON(m[1], rec);
           return json({ ok: true, item: rec });
+        }
+      }
+
+      /* 파일 올리기: 3MB 조각으로 나눠 받은 뒤 합침 */
+      const up = path.match(/^\/api\/admin\/upload\/([a-z0-9]{8,40})\/(\d{1,2}|finish)$/);
+      if (up) {
+        const [, uid, part] = up;
+        if (part !== "finish" && method === "PUT") {
+          const body = new Uint8Array(await req.arrayBuffer());
+          if (!body.length || body.length > 4_300_000) return json({ ok: false, error: "조각 크기가 올바르지 않습니다." }, 413);
+          await tmpStore().set(uid + "-" + part, body.buffer as ArrayBuffer);
+          return json({ ok: true });
+        }
+        if (part === "finish" && method === "POST") {
+          const body = await req.json().catch(() => ({} as any));
+          const TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov" };
+          const type = String(body.type || "");
+          const ext = TYPES[type];
+          const parts = int(body.parts, 12);
+          if (!ext || !parts) return json({ ok: false, error: "지원하지 않는 파일 형식입니다." }, 400);
+          const tmp = tmpStore();
+          const chunks: Uint8Array[] = [];
+          let total = 0;
+          for (let i = 0; i < parts; i++) {
+            const c = await tmp.get(uid + "-" + i, { type: "arrayBuffer" });
+            if (!c) return json({ ok: false, error: "업로드가 끊겼습니다. 다시 시도해 주세요." }, 400);
+            const u = new Uint8Array(c as ArrayBuffer); chunks.push(u); total += u.length;
+          }
+          if (total > 25_000_000) return json({ ok: false, error: "파일이 너무 큽니다 (최대 25MB)." }, 413);
+          const all = new Uint8Array(total); let off = 0;
+          for (const c of chunks) { all.set(c, off); off += c.length; }
+          const key = uid + "." + ext;
+          await mediaStore().set(key, all.buffer as ArrayBuffer, { metadata: { type, size: total, name: clip(body.name, 120), uploadedAt: new Date().toISOString() } });
+          await Promise.all(Array.from({ length: parts }, (_, i) => tmp.delete(uid + "-" + i)));
+          return json({ ok: true, url: "/api/media/" + key, type, size: total });
         }
       }
 
