@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>애드스팟 관리자</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <!-- 로그인 -->
+  <section class="login" id="login" hidden>
+    <form class="login-card" id="login-form">
+      <img src="../assets/adspot_logo_dark.png" alt="애드스팟" class="login-logo">
+      <h1>관리자 로그인</h1>
+      <label>비밀번호<input type="password" name="password" autocomplete="current-password" required></label>
+      <p class="login-err" id="login-err" role="alert"></p>
+      <button type="submit" class="btn btn-primary">로그인</button>
+      <a class="login-home" href="/">← 홈페이지로</a>
+    </form>
+  </section>
+
+  <!-- 관리자 -->
+  <div class="app" id="app" hidden>
+    <header class="top">
+      <div class="top-in">
+        <a class="brand" href="./"><img src="../assets/adspot_logo_dark.png" alt="애드스팟"><span>관리자</span></a>
+        <nav class="tabs" role="tablist">
+          <button type="button" role="tab" data-tab="inq" aria-selected="true">상담문의 <b class="badge" id="new-count" hidden>0</b></button>
+          <button type="button" role="tab" data-tab="content" aria-selected="false">홈페이지 수정</button>
+        </nav>
+        <div class="top-act">
+          <a class="link" href="/" target="_blank" rel="noopener">홈페이지 보기</a>
+          <button type="button" class="link" id="logout">로그아웃</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 상담문의 -->
+    <main class="panel" id="tab-inq">
+      <div class="panel-head">
+        <h2>상담문의</h2>
+        <div class="tools">
+          <div class="seg" id="inq-filter">
+            <button type="button" data-f="all" aria-pressed="true">전체</button>
+            <button type="button" data-f="new" aria-pressed="false">신규</button>
+            <button type="button" data-f="contacted" aria-pressed="false">연락함</button>
+            <button type="button" data-f="done" aria-pressed="false">완료</button>
+          </div>
+          <input type="search" id="inq-search" placeholder="사무소명·연락처·내용 검색">
+          <button type="button" class="btn" id="inq-refresh">새로고침</button>
+          <button type="button" class="btn" id="inq-csv">엑셀(CSV) 내려받기</button>
+        </div>
+      </div>
+      <p class="empty" id="inq-empty" hidden>아직 접수된 상담문의가 없습니다.</p>
+      <ul class="inq-list" id="inq-list"></ul>
+    </main>
+
+    <!-- 홈페이지 수정 -->
+    <main class="panel" id="tab-content" hidden>
+      <div class="panel-head">
+        <h2>홈페이지 수정</h2>
+        <p class="hint">저장하면 홈페이지에 바로 반영됩니다. (새로고침 후 확인)</p>
+      </div>
+      <form id="content-form" class="cform" autocomplete="off"></form>
+      <div class="savebar">
+        <span class="save-msg" id="save-msg"></span>
+        <button type="button" class="btn" id="content-reload">변경 취소</button>
+        <button type="button" class="btn btn-primary" id="content-save">저장하기</button>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="../content-defaults.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

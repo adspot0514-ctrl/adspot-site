@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+
+Sitemap: https://xn--hy1bj5x75biyv.com/sitemap.xml
