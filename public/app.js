@@ -187,7 +187,7 @@ var __adspotStart = function(C){
   var ORDER = [2, 1, 0], PHOTO_MS = 4500, FADE_LEAD = 1.0, VIDEO_MAX = 5;   // PC·모바일 공통: 로고 모션 → 법원 야경 → 도심 야경
   var DISP = {}; ORDER.forEach(function(s){ if(!(s in DISP)) DISP[s] = Object.keys(DISP).length; });
   // 영상별 재생 구간 [시작, 끝] (초) — PC 타임랩스는 시계탑 전체가 보이는 넓은 장면 위주
-  var RANGE = {0:[0.2,5.4], 1:[0.1,5.6]};   // 0: 도심 야경, 1: 법원 야경
+  var RANGE = {0:[0,5.2], 1:[0,5.5]};   // 0: 도심 야경, 1: 법원 야경
   slides.forEach(function(s, k){ var v = s.querySelector('video'); if(v && v.getAttribute('data-custom')) delete RANGE[k]; });   // 관리자에서 올린 영상은 처음부터
   function rangeOf(idx){ return RANGE[idx] || [0, VIDEO_MAX]; }
   if(!IS_MO) slides.forEach(function(s){ var v = s.querySelector('video'); if(v && v.dataset.pcPoster) v.poster = v.dataset.pcPoster; });
@@ -444,14 +444,16 @@ var __adspotStart = function(C){
     // 쇼케이스에 가까워지면 영상 미리 받기
     // 시계탑 영상: 밝은 시계 구간(0.2~4초)만 반복 — 끝부분의 어두워지는 구간은 재생하지 않음
     if(scV3 && !scV3.getAttribute('data-custom')){
-      var LOOP_A = 0.2, LOOP_B = 4.0;
-      var clampLoop = function(){ if(scV3.currentTime >= LOOP_B || scV3.currentTime < LOOP_A - .1){ try{ scV3.currentTime = LOOP_A; }catch(e){} } };
+      var LOOP_B = 4.0;   // 밝은 시계 구간(0~4초)만 반복 — 끝부분의 어두워지는 구간은 재생하지 않음
+      var clampLoop = function(){
+        if(scV3.seeking) return;                       // 이동 중에는 명령을 겹쳐 보내지 않음 (무한 이동 방지)
+        if(scV3.currentTime >= LOOP_B){ try{ scV3.currentTime = 0; }catch(e){} }
+      };
       scV3.addEventListener('timeupdate', clampLoop);
-      scV3.addEventListener('play', clampLoop);
-      scV3.addEventListener('ended', function(){ try{ scV3.currentTime = LOOP_A; }catch(e){} var p = scV3.play(); if(p && p.catch) p.catch(function(){}); });
+      scV3.addEventListener('ended', function(){ try{ scV3.currentTime = 0; }catch(e){} var p = scV3.play(); if(p && p.catch) p.catch(function(){}); });
     }
     var warmed = false;
-    var warm = function(){ if(warmed) return; warmed = true; [scV2, scV3].forEach(function(v){ if(v){ v.preload = 'auto'; try{ v.load(); }catch(e){} } }); };
+    var warm = function(){ if(warmed) return; warmed = true; [scV2, scV3].forEach(function(v){ if(v){ v.preload = 'auto'; if(v.readyState === 0 && v.networkState !== 2){ try{ v.load(); }catch(e){} } } }); };   // 이미 받은 영상은 다시 초기화하지 않음
     if('IntersectionObserver' in window) new IntersectionObserver(function(en){ if(en[0].isIntersecting) warm(); }, {rootMargin:'1200px 0px'}).observe(scSec);
     var scActive = false, scLoop = function(){ if(!scActive) return; paint(); requestAnimationFrame(scLoop); };
     if('IntersectionObserver' in window && !reduceMotion){
