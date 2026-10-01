@@ -225,6 +225,26 @@ var __adspotStart = function(C){
     })();
   }
   function activate(idx){ heroShow(idx); ensurePlay(idx); }
+  // 자동 재생이 막힌 아이폰(저전력 모드 등): 방문자의 첫 터치 때 모든 영상을 재생 가능 상태로 깨움
+  (function(){
+    var unlocked = false;
+    function unlock(){
+      if(unlocked) return; unlocked = true;
+      document.querySelectorAll('video').forEach(function(v){
+        v.muted = true;
+        var p = v.play();
+        var settle = function(){
+          var slide = v.closest('.hero-slide');
+          var keep = slide ? slide.classList.contains('is-active') : false;
+          if(!keep && v.closest('.sc-media')){ var r = v.getBoundingClientRect(); keep = r.bottom > 0 && r.top < window.innerHeight; }
+          if(!keep) v.pause();
+        };
+        if(p && p.then) p.then(settle, function(){}); else settle();
+      });
+      ['touchend','click','keydown'].forEach(function(ev){ document.removeEventListener(ev, unlock, true); });
+    }
+    ['touchend','click','keydown'].forEach(function(ev){ document.addEventListener(ev, unlock, true); });
+  })();
   function next(){ step = (step + 1) % ORDER.length; activate(ORDER[step]); }
   // 영상이 뒤늦게 준비되면 바로 재생
   slides.forEach(function(s, k){

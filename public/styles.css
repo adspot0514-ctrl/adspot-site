@@ -1507,3 +1507,9 @@ html.qm-open{overflow:hidden}
 }
 
 .qm[hidden],#qm-step-form[hidden],#qm-step-done[hidden]{display:none !important}
+
+/* 아이폰에서 자동 재생이 막혔을 때 가운데 재생 버튼 숨김 (정지 화면으로 자연스럽게) */
+video::-webkit-media-controls-start-playback-button{display:none !important;-webkit-appearance:none}
+video::-webkit-media-controls{display:none !important}
+video::-webkit-media-controls-panel{display:none !important}
+.hero-media video,.sc-media video{pointer-events:none}
