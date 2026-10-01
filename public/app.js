@@ -136,7 +136,7 @@ var __adspotStart = function(C){
   var navMarks = [
     ['main','main'], ['statement','identity'], ['identity','time'],
     ['stories','portfolio'], ['showcase',null], ['why',null],   // 성장 이야기 + 포트폴리오 = '포트폴리오' 메뉴
-    ['pricing','pricing'], ['contact','contact']
+    ['pricing','pricing'], ['faq',null], ['contact','contact']
   ].map(function(m){ return {el:document.getElementById(m[0]), key:m[1], id:m[0]}; }).filter(function(m){ return m.el; });
   function fullyVisible(el){ var r = el.getBoundingClientRect(), hh = header.offsetHeight; return r.top >= hh - 2 && r.bottom <= window.innerHeight + 2; }
   function syncNav(){
@@ -755,9 +755,34 @@ var __adspotStart = function(C){
     return {name:String(f.name), mix:{cafe:+f.mix.cafe||0, influencer:+f.mix.influencer||0, blog:+f.mix.blog||0}};
   });
   var PRICING_NOTE = pick(C.pricingNote, D.pricingNote);
+  /* 관리자에서 바꾼 가격·분야·전화번호를 FAQ와 구조화 데이터에도 반영 */
+  (function(){
+    var wonF = function(n){ return (+n || 0).toLocaleString('ko-KR'); };
+    var tots = FIELDS.map(function(f){ return PLANS.reduce(function(s, p){ return s + (f.mix[p.key] || 0) * (+p.price || 0); }, 0); });
+    var lo = Math.round(Math.min.apply(null, tots) / 10000), hi = Math.round(Math.max.apply(null, tots) / 10000);
+    var set = function(k, v){ document.querySelectorAll('[data-faq="' + k + '"]').forEach(function(el){ el.textContent = v; }); };
+    set('plans', PLANS.map(function(p){ return p.name + '(건당 ' + wonF(p.price) + '원)'; }).join(', '));
+    set('fields', FIELDS.map(function(f){ return f.name; }).join(', '));
+    if(isFinite(lo) && isFinite(hi)) set('range', '월 약 ' + lo + '만~' + hi + '만 원');
+    set('phone', pick(CC.phoneText, DC.phoneText));
+    var ld = document.getElementById('ld-main'); if(!ld) return;
+    try{
+      var g = JSON.parse(ld.textContent);
+      g['@graph'].forEach(function(n){
+        if(n['@type'] === 'Service' && n.hasOfferCatalog) n.hasOfferCatalog.itemListElement = PLANS.map(function(p){
+          return {'@type':'Offer', itemOffered:{'@type':'Service', name:p.name, description:p.desc}, priceSpecification:{'@type':'UnitPriceSpecification', price:+p.price, priceCurrency:'KRW', unitText:'건', valueAddedTaxIncluded:false}};
+        });
+        if(n['@type'] === 'FAQPage') n.mainEntity.forEach(function(q, i){
+          var item = document.querySelectorAll('.faq-item')[i]; if(item) q.acceptedAnswer.text = item.querySelector('.faq-a').textContent.trim();
+        });
+      });
+      ld.textContent = JSON.stringify(g);
+    }catch(e){}
+  })();
   var won = function(n){ return Math.round(n).toLocaleString('ko-KR'); };
 
   var listEl = document.getElementById('price-list');
+  listEl.innerHTML = '';   // 검색엔진용으로 미리 넣어둔 기본 목록을 현재 값으로 교체
   PLANS.forEach(function(p){
     var li = document.createElement('li');
     li.className = 'price-item';

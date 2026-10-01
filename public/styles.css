@@ -1513,3 +1513,23 @@ video::-webkit-media-controls-start-playback-button{display:none !important;-web
 video::-webkit-media-controls{display:none !important}
 video::-webkit-media-controls-panel{display:none !important}
 .hero-media video,.sc-media video{pointer-events:none}
+
+/* =========================================================
+   자주 묻는 질문 (검색·AI 답변용 Q&A)
+   ========================================================= */
+.faq{background:#fafaf8;padding:clamp(72px,10vw,120px) 0;border-top:1px solid var(--line)}
+.faq-inner{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.4fr);gap:clamp(32px,6vw,96px);align-items:start}
+.faq-head .lead{margin-top:16px}
+.faq-list{display:grid;gap:10px}
+.faq-item{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:border-color .2s ease,box-shadow .2s ease}
+.faq-item[open]{border-color:rgba(217,119,47,.45);box-shadow:0 18px 40px -30px rgba(22,25,30,.45)}
+.faq-item summary{list-style:none;cursor:pointer;padding:20px 56px 20px 22px;position:relative}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary h3{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ink);line-height:1.45}
+.faq-item summary::after{content:"";position:absolute;right:22px;top:50%;width:11px;height:11px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .25s ease}
+.faq-item[open] summary::after{transform:translateY(-30%) rotate(-135deg);border-color:var(--gold)}
+.faq-a{padding:0 22px 20px}
+.faq-a p{margin:0;font-size:15.5px;line-height:1.75;color:var(--ink-2)}
+@media (max-width:1024px){.faq-inner{grid-template-columns:1fr}}
+@media (max-width:767px){.faq{padding:64px 0}.faq-item summary{padding:17px 48px 17px 18px}.faq-item summary h3{font-size:15.5px}.faq-a{padding:0 18px 18px}.faq-a p{font-size:14.5px}}
+.faq .h2{font-size:clamp(26px,2.5vw,36px);line-height:1.3}
