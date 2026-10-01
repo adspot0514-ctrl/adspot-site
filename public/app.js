@@ -920,16 +920,27 @@ var __adspotStart = function(C){
 
   /* ---------------- 어떤 마케팅을 원하시나요? (채팅) ---------------- */
   // 대화 시나리오: 사무소의 고민 → 애드스팟의 답 (문구는 여기서 수정)
+  // 사례별 고민(q)과 애드스팟의 답변(r) — 마지막 답변은 오렌지 말풍선
   var CHATS = [
-    {name:'법무법인 A', q:'광고비는 계속 나가는데, 실제 상담 문의로는 잘 이어지지 않아요.'},
-    {name:'법률사무소 B', q:'이곳저곳에서 꾸준한 마케팅을 했는데 효율이 나오지 않아요.'},
-    {name:'법률사무소 C', q:'개업한 지 얼마 안 됐는데, 어디서부터 시작해야 할지 모르겠어요.'}
+    {name:'법무법인 A', q:'광고비는 계속 나가는데, 실제 상담 문의로는 잘 이어지지 않아요.', r:[
+      {t:'노출만 늘리는 광고는 문의로 이어지기 어렵습니다.'},
+      {t:'분야·지역을 진단해, 매출과 직결되는 카페와 블로그에 노출합니다.'},
+      {t:'1개월만 먼저 해보세요. 문의로 이어지는지 결과로 확인하시면 됩니다.', gold:true}
+    ]},
+    {name:'법률사무소 B', q:'이곳저곳에서 꾸준한 마케팅을 했는데 효율이 나오지 않아요.', r:[
+      {t:'채널만 늘리면 비용은 쌓이고 효율은 떨어지기 쉽습니다.'},
+      {t:'카페·인플루언서·블로그를 분야에 맞게 하나로 묶어 운영합니다.'},
+      {t:'효과 없는 채널은 정리하고, 매달 결과로 조합을 다시 맞춥니다.', gold:true}
+    ]},
+    {name:'법률사무소 C', q:'개업한 지 얼마 안 됐는데, 어디서부터 시작해야 할지 모르겠어요.', r:[
+      {t:'개업 초기엔 기본 노출부터 차근차근 쌓는 게 중요합니다.'},
+      {t:'준최적화 블로그로 시작해, 분야에 맞춰 카페와 인플루언서를 더합니다.'},
+      {t:'장기 계약 부담 없이, 1개월 단위로 가볍게 시작하세요.', gold:true}
+    ]}
   ];
-  var REPLIES = [
-    {t:'그럴듯한 패키지만 팔고, 효과는 단 1%도 책임지지 않는 대행사가 너무 많습니다.'},
-    {t:'애드스팟은 법률마케팅만 전문으로, 실제 매출을 만든 사례를 수없이 보유하고 있습니다.'},
-    {t:'1개월 단위로 먼저 시작해 보세요. 결과로 다음 달을 결정하시면 됩니다.', gold:true}
-  ];
+  // 마무리 문구: 관리자에서 바꿔도 '애드스팟'은 오렌지로 강조
+  (function(){ var q = document.querySelector('.why-quote [data-edit]'); if(!q) return;
+    q.innerHTML = esc(q.textContent).replace(/애드스팟/g, '<em>애드스팟</em>'); })();
   var whyTabs = document.getElementById('why-tabs');
   var whySec = document.getElementById('why'), whyNum = document.getElementById('why-num');
   var chatBody = document.getElementById('chat-body');
@@ -962,14 +973,14 @@ var __adspotStart = function(C){
     [].slice.call(chatBody.children).forEach(function(m){ m.classList.add('leaving'); });
     if(reduceMotion){
       chatBody.innerHTML = '';
-      bubble('in', CHATS[i].q); REPLIES.forEach(function(r){ bubble('out' + (r.gold ? ' gold' : ''), r.t); });
+      bubble('in', CHATS[i].q); CHATS[i].r.forEach(function(r){ bubble('out' + (r.gold ? ' gold' : ''), r.t); });
       return;
     }
     var t = 350;
     later(function(){ chatBody.innerHTML = ''; bubble('sys', '오늘'); }, t);
     later(function(){ bubble('in typing'); }, t += 300);
     later(function(){ chatBody.lastChild.remove(); bubble('in', CHATS[i].q); }, t += 1000);
-    REPLIES.forEach(function(r){
+    CHATS[i].r.forEach(function(r){
       later(function(){ bubble('out typing'); }, t += 700);
       later(function(){ chatBody.lastChild.remove(); bubble('out' + (r.gold ? ' gold' : ''), r.t); }, t += 950);
     });

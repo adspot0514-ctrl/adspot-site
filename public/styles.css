@@ -1533,3 +1533,17 @@ video::-webkit-media-controls-panel{display:none !important}
 @media (max-width:1024px){.faq-inner{grid-template-columns:1fr}}
 @media (max-width:767px){.faq{padding:64px 0}.faq-item summary{padding:17px 48px 17px 18px}.faq-item summary h3{font-size:15.5px}.faq-a{padding:0 18px 18px}.faq-a p{font-size:14.5px}}
 .faq .h2{font-size:clamp(26px,2.5vw,36px);line-height:1.3}
+/* 화면이 낮은 PC(1280×720 등): 질문과 답변 3개가 휴대폰 화면 안에 모두 보이도록 */
+@media (min-width:1025px) and (max-height:780px){
+  .phone{width:256px}
+  .msg{font-size:12px;line-height:1.42;padding:7px 10px;max-width:88%}
+}
+
+/* 왜 애드스팟인가 — 마무리 문구: 왼쪽 오렌지 막대 + 제목과 같은 글꼴·색, '애드스팟'만 오렌지 */
+.why-quote{position:relative;margin-top:34px;padding:4px 0 4px 20px;font-size:clamp(22px,1.95vw,28px);font-weight:800;line-height:1.35;letter-spacing:-.03em;color:var(--ink)}
+.why-quote::before{content:"";position:absolute;left:0;top:.18em;bottom:.18em;width:4px;border-radius:2px;background:var(--gold)}
+.why-quote span{color:inherit;font:inherit;margin:0}
+.why-quote em{font-style:normal;color:var(--gold)}
+@media (min-width:1025px) and (max-height:880px){.why-quote{margin-top:24px;font-size:24px}}
+@media (min-width:1025px) and (max-height:780px){.why-quote{margin-top:16px;font-size:21px}}
+@media (max-width:767px){.why-quote{margin-top:28px;font-size:21px;padding-left:16px}}
