@@ -32,7 +32,7 @@
     // 분야별 추천 조합 표
     document.querySelectorAll('[data-sub="fields"]').forEach(function(tb){
       tb.innerHTML = fields.map(function(f){ var m = f.mix;
-        return '<tr><th scope="row">' + esc(f.name) + '</th><td>' + (+m.cafe || 0) + '건</td><td>' + (+m.influencer || 0) + '건</td><td>' + (+m.blog || 0) + '건</td><td><b>월 약 ' + Math.round(month(m) / 10000) + '만 원</b></td></tr>'; }).join('');
+        return '<tr><th scope="row">' + esc(f.name) + '</th><td>' + (+m.cafe || 0) + '건</td><td>' + (+m.influencer || 0) + '건</td><td>' + (+m.blog || 0) + '건</td></tr>'; }).join('');   // 월 합계 금액은 표시하지 않음
     });
     // FAQ 속 금액·전화번호
     var tots = fields.map(function(f){ return month(f.mix); });
