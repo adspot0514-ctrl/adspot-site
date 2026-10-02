@@ -256,7 +256,7 @@
     var M = merged();
     var h = '';
     h += sec('연락처', '전화 상담 버튼 · 카카오톡 버튼',
-      '<div class="grid2">' + f('전화 상담 번호', 'phoneText', M.contact.phoneText, {hint:'예) 010-8675-2328'}) + f('카카오톡 채널 주소', 'kakaoUrl', M.contact.kakaoUrl, {hint:'예) https://pf.kakao.com/_xxxx/chat'}) + '</div>', true);
+      '<div class="grid2">' + f('전화 상담 번호', 'phoneText', M.contact.phoneText, {hint:'예) 010-8675-2328'}) + f('카카오톡 채널 주소', 'kakaoUrl', M.contact.kakaoUrl, {hint:'예) https://open.kakao.com/o/xxxx'}) + '</div>', true);
     mediaState = JSON.parse(JSON.stringify(M.media));
     h += sec('메인 첫 화면', '헤드라인 · 문구 · 배경 사진/영상',
       f('상단 작은 문구', 'kicker', M.hero.kicker) +

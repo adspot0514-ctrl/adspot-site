@@ -1,6 +1,6 @@
 /* ADSPOT — 홈페이지 기본 콘텐츠 (관리자 페이지에서 저장한 값이 없을 때 사용) */
 window.ADSPOT_DEFAULTS = {
-  contact: { phoneTel: '01086752328', phoneText: '010-8675-2328', kakaoUrl: 'https://pf.kakao.com/_HYZrG/chat' },
+  contact: { phoneTel: '01086752328', phoneText: '010-8675-2328', kakaoUrl: 'https://open.kakao.com/o/sVUpCoQi' },
   hero: {
     kicker: '10년 전부터, 법무법인이 선택한 법률마케팅',
     lead: '애드스팟은 법무법인 내부 홍보팀으로 시작한 만큼\n실제 변호사님의 특수성에 적합한 온라인 마케팅을 진단 후,\n시기에 고려한 맞춤형 광고를 집행합니다.'
