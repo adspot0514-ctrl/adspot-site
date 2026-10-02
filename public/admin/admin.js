@@ -491,6 +491,39 @@
   $$('#st-range button').forEach(function(b){ b.addEventListener('click', function(){ stDays = +b.dataset.d; $$('#st-range button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); loadStats(); }); });
   $('#st-refresh').addEventListener('click', loadStats);
 
+
+  /* ---------------- 백업 · 복원 · 검색엔진 알림 ---------------- */
+  $('#bk-down').addEventListener('click', function(){
+    api('GET', '/admin/backup').then(function(j){
+      var blob = new Blob([JSON.stringify(j, null, 1)], {type:'application/json'});
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '애드스팟_백업_' + new Date().toISOString().slice(0,10) + '.json'; a.click();
+      toast('백업 파일을 내려받았습니다. (상담 ' + (j.inquiries || []).length + '건)');
+    }).catch(function(err){ toast('백업 실패: ' + err.message); });
+  });
+  $('#bk-up').addEventListener('change', function(e){
+    var file = e.target.files[0]; e.target.value = ''; if(!file) return;
+    var r = new FileReader();
+    r.onload = function(){
+      var data; try{ data = JSON.parse(r.result); }catch(err){ toast('백업 파일 형식이 아닙니다.'); return; }
+      var n = (data.inquiries || []).length;
+      if(!confirm('백업 파일을 불러올까요?\n- 홈페이지 수정 내용: ' + (data.content ? '있음 (현재 내용을 덮어씁니다)' : '없음') + '\n- 상담 내역: ' + n + '건 (같은 건은 덮어쓰고, 나머지는 추가)')) return;
+      var from = prompt('관리자에서 올린 이미지·영상도 예전 사이트에서 가져올까요?\n가져오려면 예전 사이트 주소를 입력하세요. (건너뛰려면 비워두세요)', 'https://xn--hy1bj5x75biyv.com') || '';
+      toast('불러오는 중입니다…');
+      api('POST', '/admin/restore', {data:data, fromOrigin:from.trim()}).then(function(j){
+        var x = j.result || {};
+        alert('불러오기 완료\n- 홈페이지 수정 내용: ' + (x.content ? '반영' : '없음') + '\n- 상담 내역: ' + x.inquiries + '건\n- 이미지·영상: ' + x.media + '개' + ((x.mediaFailed || []).length ? '\n- 가져오지 못한 파일: ' + x.mediaFailed.join(', ') : ''));
+        loadInquiries(); loadContent();
+      }).catch(function(err){ toast('불러오기 실패: ' + err.message); });
+    };
+    r.readAsText(file);
+  });
+  $('#ix-ping').addEventListener('click', function(){
+    api('POST', '/admin/indexnow').then(function(j){
+      var ok = (j.results || []).filter(function(r){ return r.status >= 200 && r.status < 300; }).length;
+      toast('검색엔진 알림 전송: ' + ok + '/' + (j.results || []).length + '곳 접수 (페이지 ' + j.count + '개)');
+    }).catch(function(err){ toast('알림 실패: ' + err.message); });
+  });
+
   /* 시작 */
   if(token){ showApp(); } else { $('#login').hidden = false; }
 })();

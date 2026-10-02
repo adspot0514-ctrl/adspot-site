@@ -187,3 +187,4 @@ label.btn{display:inline-flex;align-items:center;cursor:pointer}
 .st-chart .col em{position:static;order:4;font-size:10.5px;line-height:1}
 .st-chart .col small{order:3}
 .st-chart{height:220px}
+#bk-up-label{display:inline-flex;align-items:center;cursor:pointer}

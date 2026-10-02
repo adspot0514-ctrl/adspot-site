@@ -63,6 +63,11 @@
     <main class="panel" id="tab-content" hidden>
       <div class="panel-head">
         <h2>홈페이지 수정</h2>
+        <div class="tools">
+          <button type="button" class="btn" id="bk-down">백업 내려받기</button>
+          <label class="btn" id="bk-up-label">백업 불러오기<input type="file" id="bk-up" accept="application/json,.json" hidden></label>
+          <button type="button" class="btn" id="ix-ping" title="네이버·빙에 사이트가 바뀌었다고 알립니다">검색엔진에 알리기</button>
+        </div>
         <p class="hint">저장하면 홈페이지에 바로 반영됩니다. (새로고침 후 확인)</p>
       </div>
       <form id="content-form" class="cform" autocomplete="off"></form>
