@@ -27,6 +27,27 @@ var __adspotStart = function(C){
     });
   })();
 
+  /* ---------------- 방문 통계 (개인정보 없이 페이지·유입 경로만 기록) ---------------- */
+  (function(){
+    try{
+      if(location.protocol === 'file:' || /^\/admin/.test(location.pathname)) return;
+      var q = new URLSearchParams(location.search);
+      var vid = localStorage.getItem('adspot-vid');
+      if(!vid){ vid = Math.random().toString(36).slice(2, 12) + Date.now().toString(36).slice(-4); localStorage.setItem('adspot-vid', vid); }
+      var saved = null; try{ saved = JSON.parse(sessionStorage.getItem('adspot-src') || 'null'); }catch(e){}
+      var host = ''; try{ host = document.referrer ? new URL(document.referrer).hostname : ''; }catch(e){}
+      var ext = host && host !== location.hostname;
+      var s = q.get('n_media') ? '네이버 광고' : (q.get('utm_source') || (ext ? (/naver/.test(host) ? '네이버 검색' : /google/.test(host) ? '구글 검색' : /daum/.test(host) ? '다음 검색' : /kakao/.test(host) ? '카카오' : /bing/.test(host) ? '빙 검색' : '다른 사이트')
+            : ((saved && saved.src) || (host ? '사이트 내 이동' : '직접 방문'))));
+      var r = (q.get('r') || (saved && saved.region) || '').toLowerCase().slice(0, 20);
+      var k = q.get('n_keyword') || q.get('n_query') || q.get('utm_term') || (saved && saved.kw) || '';
+      if(q.get('n_media') || q.get('utm_source') || q.get('r')){ try{ sessionStorage.setItem('adspot-src', JSON.stringify({region: r, kw: k, src: s})); }catch(e){} }
+      var data = JSON.stringify({p: location.pathname, v: vid, s: s, r: r, k: k});
+      if(navigator.sendBeacon) navigator.sendBeacon('/api/track', new Blob([data], {type: 'application/json'}));
+      else fetch('/api/track', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: data, keepalive: true});
+    }catch(e){}
+  })();
+
   /* ---------------- 지역 광고 랜딩 (?r=jeju) · 광고 유입 기록 ---------------- */
   var REGION_NAMES = {seoul:'서울', busan:'부산', daegu:'대구', incheon:'인천', gwangju:'광주', daejeon:'대전', ulsan:'울산', sejong:'세종',
     gyeonggi:'경기', gangwon:'강원', chungbuk:'충북', chungnam:'충남', jeonbuk:'전북', jeonnam:'전남', 'gwangju-jeonnam':'광주·전남',
@@ -1121,7 +1142,7 @@ var __adspotStart = function(C){
     var services = c.type === 'mix' ? c.items.map(function(it){ return it.name; }) : ['맞춤 견적'];
     fetch('/api/inquiry', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
       office:qmForm.office.value.trim(), phone:phone, field:c.field, services:services, message:comboText(c), agree:true,
-      hp:qmForm.website.value, source:'estimate', combo:c, ad: adInfo()
+      hp:qmForm.website.value, source:'estimate', combo:c, ad: adInfo(), page: location.pathname
     })})
       .then(function(r){ if(!r.ok) throw new Error('fail'); return r.json(); })
       .then(function(){
@@ -1149,7 +1170,7 @@ var __adspotStart = function(C){
       (form.message.value.trim() ? '\n내용: ' + form.message.value.trim() : '');
     var done = document.getElementById('iq-done'), d = document.getElementById('iq-done-d');
     var btn = form.querySelector('.iq-submit'); btn.disabled = true; var btnText = btn.textContent; btn.textContent = '접수 중…';
-    var payload = {office:form.office.value.trim(), phone:phone, field:iq.field || '', services:iq.services, message:form.message.value.trim(), agree:true, hp:(form.website && form.website.value) || '',
+    var payload = {office:form.office.value.trim(), phone:phone, field:iq.field || '', services:iq.services, message:form.message.value.trim(), agree:true, hp:(form.website && form.website.value) || '', page: location.pathname,
       ad: adInfo()};
     // 1순위: 홈페이지 서버에 접수 → 관리자 페이지에서 확인
     fetch('/api/inquiry', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)})

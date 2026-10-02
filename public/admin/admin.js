@@ -39,6 +39,10 @@
       $$('.tabs button').forEach(function(x){ x.setAttribute('aria-selected', String(x === b)); });
       $('#tab-inq').hidden = b.dataset.tab !== 'inq';
       $('#tab-content').hidden = b.dataset.tab !== 'content';
+      $('#tab-region').hidden = b.dataset.tab !== 'region';
+      $('#tab-stats').hidden = b.dataset.tab !== 'stats';
+      if(b.dataset.tab === 'stats') loadStats();
+      if(b.dataset.tab === 'region') renderRegion();
     });
   });
 
@@ -368,7 +372,8 @@
       heroHeadline: {headlinePc:v('headlinePc'), headlineMo:v('headlineMo')},
       texts: $$('[name^="tx_"]').reduce(function(o, el){ o[el.name.slice(3)] = el.value.trim(); return o; }, {}),
       media: JSON.parse(JSON.stringify(mediaState)),
-      portfolio: $$('#pf-rows .pf-row').map(function(r){ return {name:$('[name=pf_name]', r).value.trim(), url:r.dataset.url}; })
+      portfolio: $$('#pf-rows .pf-row').map(function(r){ return {name:$('[name=pf_name]', r).value.trim(), url:r.dataset.url}; }),
+      regionPages: saved.regionPages || {}
     }};
   }
   $('#content-save').addEventListener('click', function(){
@@ -381,6 +386,110 @@
       .then(function(){ btn.disabled = false; });
   });
   $('#content-reload').addEventListener('click', function(){ if(!dirty || confirm('저장하지 않은 변경 사항을 버릴까요?')) renderContent(); });
+
+
+  /* ---------------- 지역 페이지 ---------------- */
+  var RD = window.ADSPOT_REGION_DEFAULTS || {};
+  var rgSlug = Object.keys(RD)[0] || '';
+  (function(){
+    var sel = $('#rg-sel'); if(!sel) return;
+    sel.innerHTML = Object.keys(RD).map(function(k){ return '<option value="' + k + '">' + esc(RD[k].name) + ' (' + esc(RD[k].full) + ')</option>'; }).join('');
+    sel.addEventListener('change', function(){ if(rgDirty && !confirm('저장하지 않은 변경 사항을 버릴까요?')){ sel.value = rgSlug; return; } rgSlug = sel.value; renderRegion(); });
+  })();
+  var rgDirty = false;
+  function rgMark(on){ rgDirty = on; var m = $('#rg-msg'); var has = saved.regionPages && saved.regionPages[rgSlug];
+    m.textContent = on ? '저장하지 않은 변경 사항이 있습니다.' : (has ? '관리자 수정본이 적용 중입니다.' : '기본 문구가 적용 중입니다.'); m.classList.toggle('dirty', on); }
+  function priceNow(){ var P = {}; ((saved.plans && saved.plans.length) ? saved.plans : (D.plans || [])).forEach(function(p){ P[p.key] = +p.price || 0; });
+    (D.plans || []).forEach(function(p){ if(!P[p.key]) P[p.key] = +p.price || 0; }); return P; }
+  function rgTotal(){ var P = priceNow(), f = $('#rg-form');
+    var n = function(k){ var el = $('[name=pk_' + k + ']', f); return el ? (+el.value || 0) : 0; };
+    var t = n('cafe') * P.cafe + n('influencer') * P.influencer + n('blog') * P.blog;
+    $('#rg-total').textContent = '월 약 ' + Math.round(t / 10000).toLocaleString('ko-KR') + '만 원 (부가세 별도, 현재 단가 기준)'; }
+  function renderRegion(){
+    if(!rgSlug || !RD[rgSlug]) return;
+    var d = RD[rgSlug], s = (saved.regionPages || {})[rgSlug] || {};
+    var val = function(k){ return (s[k] !== undefined && s[k] !== '') ? s[k] : d[k]; };
+    var pk = Object.assign({}, d.pkg, s.pkg || {});
+    var fq = (d.faq || []).map(function(q, i){ var o = (s.faq || [])[i] || {}; return {q: o.q || q.q, a: o.a || q.a}; });
+    $('#rg-view').href = '/regions/' + rgSlug + '/';
+    var h = '';
+    h += sec('검색 결과에 보이는 정보', '네이버·구글 검색 결과의 제목과 설명',
+      f('검색 제목', 'rg_title', val('title'), {hint:'40자 안팎 권장'}) + f('검색 설명', 'rg_desc', val('desc'), {area:true, rows:2, hint:'80~120자 권장'}), true);
+    h += sec('페이지 첫 화면', '큰 제목과 소개 문장',
+      f('큰 제목', 'rg_h1', val('h1'), {area:true, rows:2, hint:'줄바꿈 가능'}) + f('소개 문장', 'rg_lead', val('lead'), {area:true, rows:3}), true);
+    h += sec(esc(d.name) + ' 지역 추천 패키지', '월 건수 (금액은 자동 계산)',
+      '<div class="grid3">' + f('대표 카페 (건)', 'pk_cafe', pk.cafe, {type:'number', attrs:' min="0" max="999"'}) + f('인플루언서 블로그 (건)', 'pk_influencer', pk.influencer, {type:'number', attrs:' min="0" max="999"'}) + f('준최적화 블로그 (건)', 'pk_blog', pk.blog, {type:'number', attrs:' min="0" max="999"'}) + '</div><p class="hint" id="rg-total"></p>', true);
+    h += sec(esc(d.name) + ' 이야기 · 사례', '입력하면 페이지에 새 영역으로 표시됩니다 (비우면 숨김)',
+      f('지역 이야기', 'rg_story', s.story || '', {area:true, rows:6, hint:'실제 진행 사례, 지역 특징 등. 빈 줄로 문단 구분'}), true);
+    h += sec('자주 묻는 질문', '질문과 답변 3개',
+      fq.map(function(q, i){ return '<div class="item"><div class="item-head">질문 ' + (i + 1) + '</div>' + f('질문', 'rg_q' + i, q.q) + f('답변', 'rg_a' + i, q.a, {area:true, rows:3}) + '</div>'; }).join(''));
+    $('#rg-form').innerHTML = h; rgTotal(); rgMark(false);
+  }
+  $('#rg-form').addEventListener('input', function(){ rgMark(true); rgTotal(); });
+  function rgCollect(){
+    var d = RD[rgSlug], f = $('#rg-form'), v = function(n){ var el = $('[name=' + n + ']', f); return el ? el.value.trim() : ''; };
+    var o = {title:v('rg_title'), desc:v('rg_desc'), h1:v('rg_h1'), lead:v('rg_lead'), story:v('rg_story'),
+      pkg:{cafe:+v('pk_cafe') || 0, influencer:+v('pk_influencer') || 0, blog:+v('pk_blog') || 0},
+      faq:(d.faq || []).map(function(_, i){ return {q:v('rg_q' + i), a:v('rg_a' + i)}; })};
+    // 기본값과 같은 문구는 저장하지 않음 (나중에 기본 문구가 바뀌어도 따라가도록)
+    ['title','desc','h1','lead'].forEach(function(k){ if(o[k] === d[k]) o[k] = ''; });
+    o.faq = o.faq.map(function(q, i){ return {q: q.q === d.faq[i].q ? '' : q.q, a: q.a === d.faq[i].a ? '' : q.a}; });
+    return o;
+  }
+  function rgPut(pages, okMsg){
+    var content = Object.assign({}, saved, {regionPages: pages}); delete content.updatedAt;
+    var btns = $$('#rg-bar .btn'); btns.forEach(function(b){ b.disabled = true; });
+    return api('PUT', '/admin/content', {content:content})
+      .then(function(j){ saved = Object.assign({}, content, {updatedAt:j.updatedAt}); renderRegion(); toast(okMsg); })
+      .catch(function(err){ toast('저장 실패: ' + err.message); })
+      .then(function(){ btns.forEach(function(b){ b.disabled = false; }); });
+  }
+  $('#rg-save').addEventListener('click', function(){
+    var pages = Object.assign({}, saved.regionPages || {}); pages[rgSlug] = rgCollect();
+    rgPut(pages, RD[rgSlug].name + ' 지역 페이지를 저장했습니다.');
+  });
+  $('#rg-reset').addEventListener('click', function(){
+    if(!confirm(RD[rgSlug].name + ' 지역 페이지를 기본 문구로 되돌릴까요?')) return;
+    var pages = Object.assign({}, saved.regionPages || {}); delete pages[rgSlug];
+    rgPut(pages, '기본 문구로 되돌렸습니다.');
+  });
+
+
+  /* ---------------- 통계 ---------------- */
+  var stDays = 7;
+  var PAGE_NAMES = {'/':'메인', '/lawyer-marketing/':'변호사마케팅 안내', '/law-firm-marketing/':'법무법인마케팅 안내', '/legal-marketing/':'법률마케팅 안내', '/regions/':'전국 서비스 지역'};
+  var AD_REGION = {gwangju:'광주', jeonnam:'전남'};
+  Object.keys(window.ADSPOT_REGION_DEFAULTS || {}).forEach(function(k){ AD_REGION[k] = window.ADSPOT_REGION_DEFAULTS[k].name; PAGE_NAMES['/regions/' + k + '/'] = window.ADSPOT_REGION_DEFAULTS[k].name + ' 지역 페이지'; });
+  var DEV = {m:'모바일', pc:'PC'};
+  var num = function(n){ return (+n || 0).toLocaleString('ko-KR'); };
+  var pct = function(a, b){ return b ? (Math.round(a / b * 1000) / 10) + '%' : '-'; };
+  function bars(list, map){
+    if(!list || !list.length) return '<p class="empty-s">아직 데이터가 없습니다.</p>';
+    var max = Math.max.apply(null, list.map(function(x){ return x.count; }));
+    return '<ul class="st-bars">' + list.map(function(x){ var label = (map && map[x.name]) || x.name;
+      return '<li><span class="l">' + esc(label) + '</span><span class="b"><i style="width:' + Math.max(3, x.count / max * 100) + '%"></i></span><span class="n">' + num(x.count) + '</span></li>'; }).join('') + '</ul>';
+  }
+  function loadStats(){
+    $('#st-cards').innerHTML = '<p class="empty-s">불러오는 중…</p>';
+    return api('GET', '/admin/stats?days=' + stDays).then(function(j){
+      $('#st-period').textContent = (j.from === j.to ? j.to : j.from + ' ~ ' + j.to) + ' (한국 시간 기준)';
+      var t = j.totals;
+      $('#st-cards').innerHTML = [['방문 수', num(t.views)], ['방문자', num(t.visitors)], ['상담 신청', num(t.inquiries)], ['전환율', pct(t.inquiries, t.visitors)]]
+        .map(function(c){ return '<div class="st-card"><span>' + c[0] + '</span><b>' + c[1] + '</b></div>'; }).join('');
+      var max = Math.max.apply(null, j.daily.map(function(d){ return d.views; }).concat([1]));
+      $('#st-chart').innerHTML = j.daily.map(function(d){
+        return '<div class="col" title="' + d.day + ' · 방문 ' + d.views + ' · 방문자 ' + d.visitors + ' · 신청 ' + d.inquiries + '"><span class="v">' + (d.views || '') + '</span><i style="height:' + (d.views / max * 100) + '%"></i>' + (d.inquiries ? '<em>' + d.inquiries + '건</em>' : '') + '<small>' + d.day.slice(5).replace('-', '.') + '</small></div>'; }).join('');
+      $('#st-pages').innerHTML = j.pages.length ? '<table><thead><tr><th>페이지</th><th>방문 수</th><th>방문자</th><th>상담 신청</th><th>전환율</th></tr></thead><tbody>' +
+        j.pages.map(function(p){ return '<tr><th><a href="' + esc(p.path) + '" target="_blank" rel="noopener">' + esc(PAGE_NAMES[p.path] || p.path) + '</a></th><td>' + num(p.views) + '</td><td>' + num(p.visitors) + '</td><td>' + num(p.inquiries) + '</td><td>' + pct(p.inquiries, p.visitors) + '</td></tr>'; }).join('') + '</tbody></table>'
+        : '<p class="empty-s">아직 데이터가 없습니다.</p>';
+      $('#st-src').innerHTML = bars(j.sources);
+      $('#st-region').innerHTML = bars(j.regions, AD_REGION);
+      $('#st-kw').innerHTML = bars(j.keywords);
+      $('#st-dev').innerHTML = bars(j.devices, DEV);
+    }).catch(function(err){ $('#st-cards').innerHTML = '<p class="empty-s">' + esc(err.message) + '</p>'; });
+  }
+  $$('#st-range button').forEach(function(b){ b.addEventListener('click', function(){ stDays = +b.dataset.d; $$('#st-range button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); loadStats(); }); });
+  $('#st-refresh').addEventListener('click', loadStats);
 
   /* 시작 */
   if(token){ showApp(); } else { $('#login').hidden = false; }

@@ -29,6 +29,8 @@
         <nav class="tabs" role="tablist">
           <button type="button" role="tab" data-tab="inq" aria-selected="true">상담문의 <b class="badge" id="new-count" hidden>0</b></button>
           <button type="button" role="tab" data-tab="content" aria-selected="false">홈페이지 수정</button>
+          <button type="button" role="tab" data-tab="region" aria-selected="false">지역 페이지</button>
+          <button type="button" role="tab" data-tab="stats" aria-selected="false">통계</button>
         </nav>
         <div class="top-act">
           <a class="link" href="/" target="_blank" rel="noopener">홈페이지 보기</a>
@@ -70,10 +72,55 @@
         <button type="button" class="btn btn-primary" id="content-save">저장하기</button>
       </div>
     </main>
+
+    <!-- 지역 페이지 -->
+    <main class="panel" id="tab-region" hidden>
+      <div class="panel-head">
+        <h2>지역 페이지</h2>
+        <div class="tools">
+          <select id="rg-sel" class="rg-sel" aria-label="지역 선택"></select>
+          <a class="btn" id="rg-view" href="#" target="_blank" rel="noopener">페이지 보기</a>
+        </div>
+      </div>
+      <p class="hint" style="margin:-6px 0 18px">저장하면 방문자와 검색엔진 모두 바뀐 내용을 보게 됩니다. 비워 둔 칸은 기본 문구가 쓰입니다.</p>
+      <form id="rg-form" class="cform" autocomplete="off"></form>
+      <div class="savebar" id="rg-bar">
+        <span class="save-msg" id="rg-msg"></span>
+        <button type="button" class="btn" id="rg-reset">기본값으로 되돌리기</button>
+        <button type="button" class="btn btn-primary" id="rg-save">이 지역 저장하기</button>
+      </div>
+    </main>
+
+    <!-- 통계 -->
+    <main class="panel" id="tab-stats" hidden>
+      <div class="panel-head">
+        <h2>통계</h2>
+        <div class="tools">
+          <div class="seg" id="st-range">
+            <button type="button" data-d="1" aria-pressed="false">오늘</button>
+            <button type="button" data-d="7" aria-pressed="true">7일</button>
+            <button type="button" data-d="30" aria-pressed="false">30일</button>
+          </div>
+          <button type="button" class="btn" id="st-refresh">새로고침</button>
+        </div>
+      </div>
+      <p class="hint" id="st-period" style="margin:-6px 0 16px"></p>
+      <div class="st-cards" id="st-cards"></div>
+      <section class="st-box"><h3>일별 방문</h3><div class="st-chart" id="st-chart"></div></section>
+      <section class="st-box"><h3>페이지별</h3><div class="st-tbl" id="st-pages"></div></section>
+      <div class="st-grid">
+        <section class="st-box"><h3>유입 경로</h3><div id="st-src"></div></section>
+        <section class="st-box"><h3>광고 지역</h3><div id="st-region"></div></section>
+        <section class="st-box"><h3>검색 키워드 (광고)</h3><div id="st-kw"></div></section>
+        <section class="st-box"><h3>기기</h3><div id="st-dev"></div></section>
+      </div>
+      <p class="hint" style="margin-top:14px">방문 수는 페이지를 연 횟수, 방문자는 서로 다른 브라우저 수입니다. 검색 로봇과 관리자 페이지는 제외됩니다.</p>
+    </main>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="../content-defaults.js"></script>
+<script src="../regions-defaults.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>

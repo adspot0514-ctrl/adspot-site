@@ -94,6 +94,27 @@
     });
   }
 
+  /* ---------------- 방문 통계 (개인정보 없이 페이지·유입 경로만 기록) ---------------- */
+  (function(){
+    try{
+      if(location.protocol === 'file:' || /^\/admin/.test(location.pathname)) return;
+      var q = new URLSearchParams(location.search);
+      var vid = localStorage.getItem('adspot-vid');
+      if(!vid){ vid = Math.random().toString(36).slice(2, 12) + Date.now().toString(36).slice(-4); localStorage.setItem('adspot-vid', vid); }
+      var saved = null; try{ saved = JSON.parse(sessionStorage.getItem('adspot-src') || 'null'); }catch(e){}
+      var host = ''; try{ host = document.referrer ? new URL(document.referrer).hostname : ''; }catch(e){}
+      var ext = host && host !== location.hostname;
+      var s = q.get('n_media') ? '네이버 광고' : (q.get('utm_source') || (ext ? (/naver/.test(host) ? '네이버 검색' : /google/.test(host) ? '구글 검색' : /daum/.test(host) ? '다음 검색' : /kakao/.test(host) ? '카카오' : /bing/.test(host) ? '빙 검색' : '다른 사이트')
+            : ((saved && saved.src) || (host ? '사이트 내 이동' : '직접 방문'))));
+      var r = (q.get('r') || (saved && saved.region) || '').toLowerCase().slice(0, 20);
+      var k = q.get('n_keyword') || q.get('n_query') || q.get('utm_term') || (saved && saved.kw) || '';
+      if(q.get('n_media') || q.get('utm_source') || q.get('r')){ try{ sessionStorage.setItem('adspot-src', JSON.stringify({region: r, kw: k, src: s})); }catch(e){} }
+      var data = JSON.stringify({p: location.pathname, v: vid, s: s, r: r, k: k});
+      if(navigator.sendBeacon) navigator.sendBeacon('/api/track', new Blob([data], {type: 'application/json'}));
+      else fetch('/api/track', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: data, keepalive: true});
+    }catch(e){}
+  })();
+
   // 지역 페이지 상담 신청 → 관리자 문의 목록에 '유입: ○○ 지역 페이지'로 저장
   document.querySelectorAll('form.rform').forEach(function(form){
     form.addEventListener('submit', function(e){
@@ -109,7 +130,7 @@
       btn.disabled = true; var label = btn.textContent; btn.textContent = '접수 중…';
       fetch('/api/inquiry', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
         office: form.office.value.trim(), phone: phone, field: form.field.value, services: [], message: form.message.value.trim(),
-        agree: true, hp: form.website.value, source: 'form', ad: ad })})
+        agree: true, hp: form.website.value, source: 'form', ad: ad, page: location.pathname })})
         .then(function(r){ if(!r.ok) throw new Error('fail'); return r.json(); })
         .then(function(){ form.reset(); msg.textContent = '상담 신청이 접수되었습니다. 확인 후 빠르게 연락드리겠습니다.'; msg.classList.add('ok'); })
         .catch(function(){ msg.textContent = '접수 중 문제가 생겼습니다. 전화나 카카오톡으로 문의해 주세요.'; msg.classList.add('err'); })

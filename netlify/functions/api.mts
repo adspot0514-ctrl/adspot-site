@@ -101,6 +101,7 @@ export default async (req: Request, context: Context) => {
         field: clip(body.field, 40),
         services: Array.isArray(body.services) ? body.services.slice(0, 6).map((s: unknown) => clip(s, 30)) : [],
         message: clip(body.message, 2000),
+        page: clip(body.page, 120),
         ad: body.ad && typeof body.ad === "object"
           ? { region: clip(body.ad.region, 20), src: clip(body.ad.src, 40), kw: clip(body.ad.kw, 80) }
           : null,
@@ -142,6 +143,22 @@ export default async (req: Request, context: Context) => {
         return new Response(part, { status: 206, headers: { ...base, "Content-Range": `bytes 0-${part.length - 1}/${buf.length}`, "Content-Length": String(part.length) } });
       }
       return new Response(method === "HEAD" ? null : buf, { status: 200, headers: { ...base, "Content-Length": String(buf.length), "Netlify-CDN-Cache-Control": "public, max-age=31536000, immutable" } });
+    }
+
+
+    /* ---------- 공개: 페이지 방문 기록 (통계용, 개인정보 없음) ---------- */
+    if (path === "/api/track" && method === "POST") {
+      const ua = req.headers.get("user-agent") || "";
+      if (/bot|crawl|spider|slurp|yeti|daum|headless|preview|facebookexternalhit|kakaotalk-scrap|lighthouse/i.test(ua)) return new Response(null, { status: 204 });
+      const body = await req.json().catch(() => ({} as any));
+      const p = clip(body.p, 120);
+      if (!p.startsWith("/") || p.startsWith("/admin") || p.startsWith("/api")) return new Response(null, { status: 204 });
+      const now = new Date(Date.now() + 9 * 3600 * 1000);            // 한국 시간 기준 날짜
+      const day = now.toISOString().slice(0, 10);
+      const ev = { t: Date.now(), p, v: clip(body.v, 24), s: clip(body.s, 30), r: clip(body.r, 20), k: clip(body.k, 60),
+                   d: /Mobi|Android|iPhone|iPad/i.test(ua) ? "m" : "pc" };
+      await getStore({ name: prefix + "stats" }).setJSON(`ev/${day}/${ev.t}-${randomBytes(3).toString("hex")}`, ev);
+      return new Response(null, { status: 204 });
     }
 
     /* ---------- 관리자 로그인 ---------- */
@@ -216,6 +233,63 @@ export default async (req: Request, context: Context) => {
           await Promise.all(Array.from({ length: parts }, (_, i) => tmp.delete(uid + "-" + i)));
           return json({ ok: true, url: "/api/media/" + key, type, size: total });
         }
+      }
+
+
+      /* ---------- 통계 ---------- */
+      if (path === "/api/admin/stats" && method === "GET") {
+        const days = Math.min(90, Math.max(1, +(url.searchParams.get("days") || 7)));
+        const st = getStore({ name: prefix + "stats", consistency: "strong" });
+        const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+        const dayList: string[] = [];
+        for (let i = days - 1; i >= 0; i--) dayList.push(new Date(Date.now() + 9 * 3600 * 1000 - i * 86400000).toISOString().slice(0, 10));
+        // 하루치 이벤트 → 요약 (지난 날짜는 요약을 저장해 두고 재사용)
+        const summarize = async (day: string) => {
+          if (day < today) { const cached: any = await st.get(`sum/${day}`, { type: "json" }); if (cached) return cached; }
+          const { blobs } = await st.list({ prefix: `ev/${day}/` });
+          const evs: any[] = (await Promise.all(blobs.map((b) => st.get(b.key, { type: "json" })))).filter(Boolean);
+          const sum: any = { day, views: evs.length, pages: {}, src: {}, region: {}, kw: {}, dev: {}, visitors: [] as string[] };
+          const vset = new Set<string>();
+          for (const e of evs) {
+            const pg = (sum.pages[e.p] ||= { views: 0, v: [] as string[] }); pg.views++; if (e.v && !pg.v.includes(e.v)) pg.v.push(e.v);
+            if (e.v) vset.add(e.v);
+            if (e.s) sum.src[e.s] = (sum.src[e.s] || 0) + 1;
+            if (e.r) sum.region[e.r] = (sum.region[e.r] || 0) + 1;
+            if (e.k) sum.kw[e.k] = (sum.kw[e.k] || 0) + 1;
+            sum.dev[e.d || "pc"] = (sum.dev[e.d || "pc"] || 0) + 1;
+          }
+          sum.visitors = [...vset];
+          if (day < today) await st.setJSON(`sum/${day}`, sum);
+          return sum;
+        };
+        const sums = await Promise.all(dayList.map(summarize));
+        // 같은 기간 상담 신청 (페이지별)
+        const istore = inquiryStore(); const { blobs: ib } = await istore.list();
+        const inqs: any[] = (await Promise.all(ib.map((b) => istore.get(b.key, { type: "json" })))).filter(Boolean);
+        const from = dayList[0];
+        const inPeriod = inqs.filter((i) => new Date(new Date(i.createdAt).getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10) >= from);
+        // 합치기
+        const pages: Record<string, { views: number; v: Set<string>; inq: number }> = {};
+        const add = (o: Record<string, number>, k: string, n: number) => { o[k] = (o[k] || 0) + n; };
+        const src: Record<string, number> = {}, region: Record<string, number> = {}, kw: Record<string, number> = {}, dev: Record<string, number> = {};
+        const allV = new Set<string>();
+        const daily = sums.map((s: any) => ({ day: s.day, views: s.views, visitors: (s.visitors || []).length,
+          inquiries: inPeriod.filter((i) => new Date(new Date(i.createdAt).getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10) === s.day).length }));
+        for (const s of sums as any[]) {
+          for (const [p, d] of Object.entries<any>(s.pages)) { const t = (pages[p] ||= { views: 0, v: new Set(), inq: 0 }); t.views += d.views; d.v.forEach((x: string) => t.v.add(x)); }
+          (s.visitors || []).forEach((x: string) => allV.add(x));
+          for (const [k, n] of Object.entries<number>(s.src)) add(src, k, n);
+          for (const [k, n] of Object.entries<number>(s.region)) add(region, k, n);
+          for (const [k, n] of Object.entries<number>(s.kw)) add(kw, k, n);
+          for (const [k, n] of Object.entries<number>(s.dev)) add(dev, k, n);
+        }
+        for (const i of inPeriod) { const p = i.page || "/"; (pages[p] ||= { views: 0, v: new Set(), inq: 0 }).inq++; }
+        const top = (o: Record<string, number>, n = 15) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n).map(([name, count]) => ({ name, count }));
+        return json({ ok: true, days, from, to: today,
+          totals: { views: daily.reduce((s, d) => s + d.views, 0), visitors: allV.size, inquiries: inPeriod.length },
+          daily,
+          pages: Object.entries(pages).map(([p, d]) => ({ path: p, views: d.views, visitors: d.v.size, inquiries: d.inq })).sort((a, b) => b.views - a.views),
+          sources: top(src), regions: top(region), keywords: top(kw), devices: top(dev) });
       }
 
       if (path === "/api/admin/content") {
