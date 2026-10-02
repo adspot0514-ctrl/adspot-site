@@ -99,3 +99,50 @@ td b{color:var(--gold-deep)}
 table.info{min-width:0}
 table.info th{width:32%}
 @media (max-width:860px){table.info th,table.info td{padding:12px 14px;font-size:14px}}
+/* 지역 페이지: 왜 애드스팟인가 · 포트폴리오 · 상담 신청 */
+.why-box{background:#fff;border:1px solid var(--line);border-radius:22px;padding:clamp(24px,4vw,40px)}
+.why-stat{display:flex;align-items:baseline;gap:6px}
+.why-stat b{font-size:clamp(56px,8vw,96px);line-height:1;font-weight:900;letter-spacing:-.04em}
+.why-stat span{font-size:clamp(24px,3vw,34px);font-weight:900;color:var(--gold)}
+.why-era{margin:10px 0 0;font-size:19px;font-weight:800;color:var(--ink-2)}
+.journey{list-style:none;margin:24px 0 0;padding:0 0 0 22px;border-left:2px solid var(--line);display:grid;gap:16px}
+.journey li{position:relative}
+.journey li::before{content:"";position:absolute;left:-30px;top:5px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--ink-2)}
+.journey li.hl::before{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 5px rgba(217,119,47,.18)}
+.journey b{display:block;font-size:18px;font-weight:800}
+.journey li.hl b{color:var(--gold-deep)}
+.journey small{font-size:14px;color:var(--muted)}
+.why-box .why-quote{position:relative;margin:28px 0 0;padding:2px 0 2px 18px;font-size:clamp(20px,2.4vw,26px);font-weight:800;letter-spacing:-.03em}
+.why-box .why-quote::before{content:"";position:absolute;left:0;top:.2em;bottom:.2em;width:4px;border-radius:2px;background:var(--gold)}
+.why-box .why-quote em{font-style:normal;color:var(--gold)}
+.logos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.logos li{background:#fff;border:1px solid var(--line);border-radius:14px;height:86px;display:flex;align-items:center;justify-content:center;padding:14px}
+.logos img{max-height:44px;max-width:100%;width:auto;object-fit:contain}
+.rform{background:#fff;border:1px solid var(--line);border-radius:20px;padding:clamp(20px,3vw,32px);display:grid;gap:14px;max-width:880px}
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rform label{display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:700;color:var(--ink-2)}
+.rform label em{font-style:normal;color:var(--gold)}
+.rform input,.rform select,.rform textarea{font:inherit;font-size:15px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--paper);color:var(--ink)}
+.rform input:focus,.rform select:focus,.rform textarea:focus{outline:none;border-color:var(--gold);background:#fff}
+.rform .agree{flex-direction:row;align-items:flex-start;gap:10px;font-weight:600;font-size:13.5px}
+.rform .agree input{width:18px;height:18px;margin-top:2px;flex:none}
+.rform .hp{position:absolute!important;left:-9999px;width:1px;height:1px;overflow:hidden}
+.rform .btn{border:0;cursor:pointer;font:inherit;font-weight:800;font-size:16px}
+.rform .btn[disabled]{opacity:.6}
+.rmsg{margin:0;font-size:14px;font-weight:700;min-height:20px}
+.rmsg.ok{color:#1f8a5b}.rmsg.err{color:#b3261e}
+@media (max-width:860px){.logos{grid-template-columns:repeat(2,1fr)}.rgrid{grid-template-columns:1fr}}
+/* 지역 추천 패키지 */
+.pkg{background:linear-gradient(135deg,#16191e 0%,#232a36 100%);color:#fff;border-radius:22px;padding:clamp(22px,3.5vw,36px);max-width:880px}
+.pkg-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.pkg-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;background:rgba(245,147,80,.16);border:1px solid rgba(245,147,80,.45);color:#ffd2b0;font-size:14px;font-weight:800}
+.pkg-badge::before{content:"";width:7px;height:7px;border-radius:50%;background:#f59350}
+.pkg-total{margin:0;display:flex;align-items:baseline;gap:8px}
+.pkg-total b{font-size:clamp(28px,3.6vw,40px);font-weight:900;letter-spacing:-.03em;color:#fff}
+.pkg-total small{font-size:13px;color:rgba(255,255,255,.6)}
+.pkg-list{list-style:none;margin:22px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pkg-list li{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.pkg-list span{font-size:13.5px;color:rgba(255,255,255,.7);font-weight:600}
+.pkg-list b{font-size:24px;font-weight:900;color:#f59350}
+.pkg .note{color:rgba(255,255,255,.6);margin-top:16px}
+@media (max-width:860px){.pkg-list{grid-template-columns:1fr}.pkg-list li{flex-direction:row;justify-content:space-between;align-items:center}}

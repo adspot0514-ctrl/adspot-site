@@ -51,7 +51,35 @@
       el.textContent = v;
       if(el.tagName === 'A') el.href = 'tel:' + String(v).replace(/[^0-9+]/g, '');
     });
-    // 구조화 데이터 (서비스 가격, FAQ 답변)
+    // 지역 추천 패키지 월 금액 (현재 단가로 다시 계산)
+    var priceOf = {}; plans.forEach(function(p){ priceOf[p.key] = p.price; });
+    document.querySelectorAll('[data-pkg]').forEach(function(box){
+      var total = ['cafe','influencer','blog'].reduce(function(s, k){ return s + (+box.getAttribute('data-' + k) || 0) * (priceOf[k] || 0); }, 0);
+      var txt = '월 약 ' + Math.round(total / 10000).toLocaleString('ko-KR') + '만 원';
+      box.querySelectorAll('[data-pkg-total]').forEach(function(el){ el.textContent = txt; });
+      set('pkg', txt);
+    });
+    // 관리자에서 고친 문구 (왜 애드스팟인가 등)
+    var T = Object.assign({}, D.texts || {}, C.texts || {});
+    document.querySelectorAll('[data-t]').forEach(function(el){
+      var v = T[el.getAttribute('data-t')]; if(!has(v)) return;
+      var hl = el.getAttribute('data-hl');
+      el.innerHTML = hl ? esc(v).replace(hl, '<em>' + esc(hl) + '</em>') : esc(v);
+    });
+    // 포트폴리오 로고
+    var pf = has(C.portfolio) ? C.portfolio : (D.portfolio || []);
+    document.querySelectorAll('[data-sub="portfolio"]').forEach(function(ul){
+      ul.innerHTML = pf.filter(function(x){ return x && x.url; }).map(function(x){
+        var src = /^(https?:)?\//.test(x.url) ? x.url : '/' + x.url;
+        return '<li><img loading="lazy" src="' + esc(src) + '" alt="' + esc(x.name || '') + '"></li>'; }).join('');
+    });
+    // 상담 신청서 분야 선택지
+    document.querySelectorAll('[data-sub="field-options"]').forEach(function(sel){
+      var cur = sel.value;
+      sel.innerHTML = '<option value="">선택</option>' + fields.map(function(f){ return '<option>' + esc(f.name) + '</option>'; }).join('') + '<option>기타</option>';
+      sel.value = cur;
+    });
+
     document.querySelectorAll('script[type="application/ld+json"]').forEach(function(sc){
       try{
         var g = JSON.parse(sc.textContent), items = document.querySelectorAll('.faq-item .faq-a');
@@ -65,6 +93,29 @@
       }catch(e){}
     });
   }
+
+  // 지역 페이지 상담 신청 → 관리자 문의 목록에 '유입: ○○ 지역 페이지'로 저장
+  document.querySelectorAll('form.rform').forEach(function(form){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var msg = form.querySelector('.rmsg'), btn = form.querySelector('button[type=submit]');
+      var phone = form.phone.value.trim();
+      msg.className = 'rmsg';
+      if(!/^[0-9\-\s+()]{9,}$/.test(phone)){ msg.textContent = '연락처를 정확히 입력해 주세요.'; msg.classList.add('err'); form.phone.focus(); return; }
+      if(!form.agree.checked){ msg.textContent = '개인정보 수집·이용에 동의해 주세요.'; msg.classList.add('err'); return; }
+      var saved = null; try{ saved = JSON.parse(sessionStorage.getItem('adspot-src') || 'null'); }catch(e2){}
+      var q = {}; try{ q = Object.fromEntries(new URLSearchParams(location.search)); }catch(e3){}
+      var ad = { region: form.getAttribute('data-region') || '', src: q.n_media ? '네이버 광고' : ((saved && saved.src) || '지역 페이지'), kw: q.n_keyword || q.n_query || (saved && saved.kw) || '' };
+      btn.disabled = true; var label = btn.textContent; btn.textContent = '접수 중…';
+      fetch('/api/inquiry', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+        office: form.office.value.trim(), phone: phone, field: form.field.value, services: [], message: form.message.value.trim(),
+        agree: true, hp: form.website.value, source: 'form', ad: ad })})
+        .then(function(r){ if(!r.ok) throw new Error('fail'); return r.json(); })
+        .then(function(){ form.reset(); msg.textContent = '상담 신청이 접수되었습니다. 확인 후 빠르게 연락드리겠습니다.'; msg.classList.add('ok'); })
+        .catch(function(){ msg.textContent = '접수 중 문제가 생겼습니다. 전화나 카카오톡으로 문의해 주세요.'; msg.classList.add('err'); })
+        .then(function(){ btn.disabled = false; btn.textContent = label; });
+    });
+  });
 
   var ctl = ('AbortController' in window) ? new AbortController() : null;
   var t = setTimeout(function(){ ctl && ctl.abort(); }, 4000);
