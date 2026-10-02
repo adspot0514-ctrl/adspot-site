@@ -33,7 +33,7 @@ window.ADSPOT_DEFAULTS = {
     {name:'민사·기타', mix:{cafe:10, influencer:10, blog:20}}
   ],
   pricingNote: '모든 금액은 건당 금액이며 부가세 별도입니다. 분야별 조합은 예시이며, 1개월 단위 계약으로 상담을 통해 건수를 확정합니다.',
-  footer: { company: '애드스팟', ceo: '이종원, 양태호', bizno: '642-70-00165', address: '서울특별시 서초구 사임당로 174 9층 905호', phone1: '02-523-0514', phone2: '010-8675-2328' },
+  footer: { company: '애드스팟', ceo: '이종원, 양태호', bizno: '642-70-00165', address: '서울특별시 서초구 사임당로 174 9층 905호', phone1: '010-8675-2328', phone2: '' },
   heroHeadline: {"headlinePc": "[검사장, 부장검사] 출신 대표변호사\n모두가 찾는 애드스팟입니다.", "headlineMo": "[검사장, 부장검사] 출신\n대표변호사 모두가 찾는\n애드스팟입니다."},
   texts: {
     "st.sub1": "장기 계약으로 묶어두지 않습니다.",

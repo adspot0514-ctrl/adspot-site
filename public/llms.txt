@@ -4,7 +4,7 @@
 
 - 공식 사이트: https://xn--hy1bj5x75biyv.com/ (애드스팟.com)
 - 소재지: 서울특별시 서초구 사임당로 174 9층 905호
-- 대표번호: 02-523-0514 / 010-8675-2328
+- 대표번호: 010-8675-2328
 - 카카오톡 채널: https://open.kakao.com/o/sVUpCoQi
 - 사업자등록번호: 642-70-00165 (상호 애드스팟, 대표자 이종원·양태호)
 
@@ -46,3 +46,21 @@
 - [법무법인마케팅](https://xn--hy1bj5x75biyv.com/law-firm-marketing/): 법무법인마케팅·법무법인홍보·법무법인광고 안내
 - [법률마케팅](https://xn--hy1bj5x75biyv.com/legal-marketing/): 법률마케팅·법률광고·법률홍보, 채널과 분야별 조합
 - [전국 서비스 지역](https://xn--hy1bj5x75biyv.com/regions/): 16개 시·도 227개 시·군·구
+
+## 지역별 안내 페이지
+- [서울 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/seoul/): 서울특별시
+- [부산 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/busan/): 부산광역시
+- [대구 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/daegu/): 대구광역시
+- [인천 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/incheon/): 인천광역시
+- [대전 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/daejeon/): 대전광역시
+- [울산 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/ulsan/): 울산광역시
+- [세종 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/sejong/): 세종특별자치시
+- [경기 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/gyeonggi/): 경기도
+- [강원 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/gangwon/): 강원특별자치도
+- [충북 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/chungbuk/): 충청북도
+- [충남 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/chungnam/): 충청남도
+- [전북 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/jeonbuk/): 전북특별자치도
+- [광주·전남 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/gwangju-jeonnam/): 전남광주통합특별시
+- [경북 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/gyeongbuk/): 경상북도
+- [경남 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/gyeongnam/): 경상남도
+- [제주 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/jeju/): 제주특별자치도

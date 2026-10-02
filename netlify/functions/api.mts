@@ -101,6 +101,9 @@ export default async (req: Request, context: Context) => {
         field: clip(body.field, 40),
         services: Array.isArray(body.services) ? body.services.slice(0, 6).map((s: unknown) => clip(s, 30)) : [],
         message: clip(body.message, 2000),
+        ad: body.ad && typeof body.ad === "object"
+          ? { region: clip(body.ad.region, 20), src: clip(body.ad.src, 40), kw: clip(body.ad.kw, 80) }
+          : null,
         source: body.source === "estimate" ? "estimate" : "form",
         combo: sanitizeCombo(body.combo),
         status: "new",

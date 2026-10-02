@@ -1553,3 +1553,7 @@ video::-webkit-media-controls-panel{display:none !important}
 .footer-links a:hover{color:var(--gold-deep);text-decoration:underline}
 .faq-a a{color:var(--gold-deep);font-weight:700}
 @media (min-width:1025px){.footer-info{grid-column:auto}}
+/* 지역 광고 랜딩: 지역 표시 배지 */
+.hero-region{display:inline-flex;align-items:center;gap:8px;margin:0 0 16px;padding:7px 14px 7px 12px;border-radius:99px;background:rgba(245,147,80,.16);border:1px solid rgba(245,147,80,.45);color:#ffd2b0;font-size:14px;font-weight:800;letter-spacing:-.01em}
+.hero-region::before{content:"";width:7px;height:7px;border-radius:50%;background:#f59350;box-shadow:0 0 0 4px rgba(245,147,80,.22)}
+@media (max-width:767px){.hero-region{font-size:12.5px;padding:5px 11px 5px 10px;margin-bottom:12px}}

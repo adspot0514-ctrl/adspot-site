@@ -4,7 +4,8 @@
  */
 const HOST = "xn--hy1bj5x75biyv.com";
 const KEY = "e761b84c2d45d8c12a1afe76406ea8e3";
-const URLS = ["/", "/lawyer-marketing/", "/law-firm-marketing/", "/legal-marketing/", "/regions/", "/llms.txt", "/sitemap.xml"].map((p) => "https://" + HOST + p);
+const REGION = ["seoul", "busan", "daegu", "incheon", "daejeon", "ulsan", "sejong", "gyeonggi", "gangwon", "chungbuk", "chungnam", "jeonbuk", "gwangju-jeonnam", "gyeongbuk", "gyeongnam", "jeju"];
+const URLS = ["/", "/lawyer-marketing/", "/law-firm-marketing/", "/legal-marketing/", "/regions/", "/llms.txt", "/sitemap.xml"].concat(REGION.map((r) => "/regions/" + r + "/")).map((p) => "https://" + HOST + p);
 
 export default async (req: Request) => {
   let body: any = {};

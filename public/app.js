@@ -27,6 +27,34 @@ var __adspotStart = function(C){
     });
   })();
 
+  /* ---------------- 지역 광고 랜딩 (?r=jeju) · 광고 유입 기록 ---------------- */
+  var REGION_NAMES = {seoul:'서울', busan:'부산', daegu:'대구', incheon:'인천', gwangju:'광주', daejeon:'대전', ulsan:'울산', sejong:'세종',
+    gyeonggi:'경기', gangwon:'강원', chungbuk:'충북', chungnam:'충남', jeonbuk:'전북', jeonnam:'전남', 'gwangju-jeonnam':'광주·전남',
+    gyeongbuk:'경북', gyeongnam:'경남', jeju:'제주'};
+  var adSource = (function(){
+    var q; try{ q = new URLSearchParams(location.search); }catch(e){ return null; }
+    var saved = null; try{ saved = JSON.parse(sessionStorage.getItem('adspot-src') || 'null'); }catch(e){}
+    var r = (q.get('r') || '').toLowerCase();
+    var info = {
+      region: REGION_NAMES[r] ? r : (saved && saved.region) || '',
+      kw: q.get('n_keyword') || q.get('n_query') || q.get('utm_term') || (saved && saved.kw) || '',
+      src: q.get('n_media') ? '네이버 광고' : (q.get('utm_source') || (saved && saved.src) || (r ? '광고' : ''))
+    };
+    if(!info.region && !info.kw && !info.src) return null;
+    try{ sessionStorage.setItem('adspot-src', JSON.stringify(info)); }catch(e){}
+    return info;
+  })();
+  function adInfo(){ return adSource ? {region: adSource.region ? REGION_NAMES[adSource.region] : '', kw: adSource.kw, src: adSource.src} : null; }
+  (function(){
+    if(!adSource || !adSource.region) return;
+    var name = REGION_NAMES[adSource.region];
+    var badge = document.getElementById('hero-region');
+    if(badge){ badge.textContent = name + ' 전 지역 온라인 상담'; badge.hidden = false; }
+    var k = document.querySelector('.hero-kicker');
+    if(k) k.textContent = name + ' 변호사마케팅 · ' + k.textContent;
+    document.title = name + ' 변호사마케팅·법률마케팅 | 애드스팟';
+  })();
+
   /* ---------------- 관리자 콘텐츠: 문구 · 헤드라인 · 이미지/영상 · 포트폴리오 ---------------- */
   // [ ] 로 감싼 부분은 강조, 줄바꿈은 그대로
   var rich = function(s, cls){ return esc(s).replace(/\[([^\]]+)\]/g, '<em class="' + (cls || 'hl-em') + '">$1</em>').replace(/\n/g, '<br>'); };
@@ -1093,7 +1121,7 @@ var __adspotStart = function(C){
     var services = c.type === 'mix' ? c.items.map(function(it){ return it.name; }) : ['맞춤 견적'];
     fetch('/api/inquiry', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
       office:qmForm.office.value.trim(), phone:phone, field:c.field, services:services, message:comboText(c), agree:true,
-      hp:qmForm.website.value, source:'estimate', combo:c
+      hp:qmForm.website.value, source:'estimate', combo:c, ad: adInfo()
     })})
       .then(function(r){ if(!r.ok) throw new Error('fail'); return r.json(); })
       .then(function(){
@@ -1121,7 +1149,8 @@ var __adspotStart = function(C){
       (form.message.value.trim() ? '\n내용: ' + form.message.value.trim() : '');
     var done = document.getElementById('iq-done'), d = document.getElementById('iq-done-d');
     var btn = form.querySelector('.iq-submit'); btn.disabled = true; var btnText = btn.textContent; btn.textContent = '접수 중…';
-    var payload = {office:form.office.value.trim(), phone:phone, field:iq.field || '', services:iq.services, message:form.message.value.trim(), agree:true, hp:(form.website && form.website.value) || ''};
+    var payload = {office:form.office.value.trim(), phone:phone, field:iq.field || '', services:iq.services, message:form.message.value.trim(), agree:true, hp:(form.website && form.website.value) || '',
+      ad: adInfo()};
     // 1순위: 홈페이지 서버에 접수 → 관리자 페이지에서 확인
     fetch('/api/inquiry', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)})
       .then(function(r){ if(!r.ok) throw new Error('fail'); return r.json(); })

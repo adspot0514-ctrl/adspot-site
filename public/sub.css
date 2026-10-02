@@ -90,3 +90,12 @@ td b{color:var(--gold-deep)}
   .mbar a{height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-weight:800;border:1.5px solid rgba(22,25,30,.14)}
   .mbar a.k{background:var(--ink);color:#fff;border-color:var(--ink)}
 }
+.h3{margin:28px 0 12px;font-size:17px;font-weight:800;letter-spacing:-.02em}
+.chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.chips li{font-size:14px;padding:6px 12px;border-radius:9px;background:var(--paper);color:var(--ink-2)}
+.reg h2 a{text-decoration:none}.reg h2 a:hover{color:var(--gold-deep)}
+.reg-more{font-size:13px;font-weight:700;color:var(--gold-deep)!important;margin-left:8px;white-space:nowrap}
+.note a{color:var(--gold-deep);font-weight:700}
+table.info{min-width:0}
+table.info th{width:32%}
+@media (max-width:860px){table.info th,table.info td{padding:12px 14px;font-size:14px}}

@@ -49,6 +49,7 @@
   function loadInquiries(){
     return api('GET', '/admin/inquiries').then(function(j){ items = j.items || []; renderInquiries(); }).catch(function(err){ toast(err.message); });
   }
+  function srcText(i){ var s = i.ad; if(!s || typeof s !== 'object') return ''; return [s.region ? s.region + ' 지역' : '', s.src || '', s.kw ? '키워드: ' + s.kw : ''].filter(Boolean).join(' · '); }
   function renderInquiries(){
     var n = items.filter(function(i){ return i.status === 'new'; }).length;
     var b = $('#new-count'); b.hidden = !n; b.textContent = n;
@@ -64,7 +65,7 @@
       return '<li class="inq' + (i.status === 'new' ? ' is-new' : '') + '" data-id="' + esc(i.id) + '">' +
         '<div><div class="inq-top"><span class="inq-office">' + esc(i.office || '(사무소명 미입력)') + '</span><span class="pill ' + esc(i.status) + '">' + (ST[i.status] || i.status) + '</span>' + (i.source === 'estimate' ? '<span class="pill src">견적 조합으로 신청</span>' : '') + '<span class="inq-date">' + fmt(i.createdAt) + '</span></div>' +
         '<dl class="inq-meta"><dt>연락처</dt><dd><a href="tel:' + esc(String(i.phone).replace(/[^0-9+]/g,'')) + '">' + esc(i.phone) + '</a></dd>' +
-        '<dt>분야</dt><dd>' + esc(i.field || '-') + '</dd><dt>관심 서비스</dt><dd>' + esc((i.services || []).join(', ') || '-') + '</dd></dl>' +
+        '<dt>분야</dt><dd>' + esc(i.field || '-') + '</dd><dt>관심 서비스</dt><dd>' + esc((i.services || []).join(', ') || '-') + '</dd>' + (srcText(i) ? '<dt>유입</dt><dd class="inq-src">' + esc(srcText(i)) + '</dd>' : '') + '</dl>' +
         comboHTML(i.combo) + (i.message && !i.combo ? '<p class="inq-msg">' + esc(i.message) + '</p>' : '') + '</div>' +
         '<div class="inq-side"><label>진행 상태</label><select data-act="status">' +
           ['new','contacted','done'].map(function(s){ return '<option value="' + s + '"' + (i.status === s ? ' selected' : '') + '>' + ST[s] + '</option>'; }).join('') +
@@ -104,9 +105,9 @@
   $('#inq-search').addEventListener('input', function(e){ query = e.target.value.trim(); renderInquiries(); });
   $('#inq-refresh').addEventListener('click', function(){ loadInquiries().then(function(){ toast('새로고침했습니다.'); }); });
   $('#inq-csv').addEventListener('click', function(){
-    var head = ['접수일시','사무소명','연락처','분야','관심 서비스','문의 내용','월 예상 금액','상태','메모'];
+    var head = ['접수일시','사무소명','연락처','분야','관심 서비스','문의 내용','월 예상 금액','유입','상태','메모'];
     var cell = function(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
-    var rows = items.map(function(i){ return [fmt(i.createdAt), i.office, i.phone, i.field, (i.services || []).join(', '), i.message, i.combo && i.combo.type === 'mix' ? i.combo.total : '', ST[i.status] || i.status, i.memo].map(cell).join(','); });
+    var rows = items.map(function(i){ return [fmt(i.createdAt), i.office, i.phone, i.field, (i.services || []).join(', '), i.message, i.combo && i.combo.type === 'mix' ? i.combo.total : '', srcText(i), ST[i.status] || i.status, i.memo].map(cell).join(','); });
     var blob = new Blob(['\ufeff' + [head.map(cell).join(',')].concat(rows).join('\r\n')], {type:'text/csv;charset=utf-8'});
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '애드스팟_상담문의_' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
   });
@@ -288,7 +289,7 @@
     });
     h += sec('푸터 사업자 정보', '홈페이지 맨 아래',
       '<div class="grid3">' + f('상호', 'company', M.footer.company) + f('대표자', 'ceo', M.footer.ceo) + f('사업자등록번호', 'bizno', M.footer.bizno) + '</div>' +
-      f('소재지', 'address', M.footer.address) + '<div class="grid2">' + f('대표번호 1', 'phone1', M.footer.phone1) + f('대표번호 2', 'phone2', M.footer.phone2) + '</div>');
+      '<div class="grid2">' + f('소재지', 'address', M.footer.address) + f('대표번호', 'phone1', M.footer.phone1, {hint:'푸터에 표시되는 번호 1개'}) + '</div>');
     $('#content-form').innerHTML = h;
     markDirty(false);
   }
@@ -363,7 +364,7 @@
       fields: fields,
       pricingNote: v('pricingNote'),
       stories: $$('[data-story]').map(function(el){ return {year:v('st_year', el), years:+v('st_years', el) || 0, title:v('st_title', el), desc:v('st_desc', el), from:v('st_from', el), to:v('st_to', el)}; }),
-      footer: {company:v('company'), ceo:v('ceo'), bizno:v('bizno'), address:v('address'), phone1:v('phone1'), phone2:v('phone2')},
+      footer: {company:v('company'), ceo:v('ceo'), bizno:v('bizno'), address:v('address'), phone1:v('phone1'), phone2:''},
       heroHeadline: {headlinePc:v('headlinePc'), headlineMo:v('headlineMo')},
       texts: $$('[name^="tx_"]').reduce(function(o, el){ o[el.name.slice(3)] = el.value.trim(); return o; }, {}),
       media: JSON.parse(JSON.stringify(mediaState)),
