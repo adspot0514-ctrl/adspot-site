@@ -188,3 +188,36 @@ label.btn{display:inline-flex;align-items:center;cursor:pointer}
 .st-chart .col small{order:3}
 .st-chart{height:220px}
 #bk-up-label{display:inline-flex;align-items:center;cursor:pointer}
+/* 광고 vs 자연 유입 */
+.st-ch{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.st-ch .ch{border:1px solid var(--line);border-radius:12px;padding:14px 16px;border-top:4px solid #c9c4ba}
+.st-ch .ch.ad{border-top-color:var(--gold)}
+.st-ch .ch.org{border-top-color:#2f8f5b}
+.st-ch .ch b{font-size:15px}
+.st-ch dl{margin:10px 0 0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13.5px}
+.st-ch dt{color:var(--muted);font-weight:600}
+.st-ch dd{margin:0;text-align:right;font-weight:800}
+.st-bars .tag{font-style:normal;display:inline-block;font-size:11px;font-weight:800;padding:1px 6px;border-radius:6px;margin-right:6px;background:#eee;color:#555}
+.st-bars .tag.ad{background:#fdebe0;color:var(--gold-deep)}
+.st-bars .tag.org{background:#e6f4ec;color:#1f8a5b}
+.st-bars li{grid-template-columns:170px 1fr 90px}
+@media (max-width:860px){.st-ch{grid-template-columns:1fr}.st-bars li{grid-template-columns:130px 1fr 70px}}
+/* 최근 방문 흐름 */
+.jr{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.jr li{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.jr li.conv{border-color:rgba(31,138,91,.5);background:#f5fbf7}
+.jr-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13.5px}
+.jr-h .tag{font-style:normal;font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:6px;background:#eee;color:#555}
+.jr-h .tag.ad{background:#fdebe0;color:var(--gold-deep)}
+.jr-h .tag.org{background:#e6f4ec;color:#1f8a5b}
+.jr-h .kw{color:var(--gold-deep);font-weight:700}
+.jr-h .meta{margin-left:auto;color:var(--muted)}
+.jr-h .ok{color:#1f8a5b}.jr-h .hot{color:var(--gold-deep)}
+.jr-s{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}
+.jr-s .st-p{background:var(--paper);border-radius:7px;padding:3px 8px;font-weight:700}
+.jr-s .st-a{border:1px dashed #cfc9bf;border-radius:7px;padding:2px 7px;color:var(--ink-2)}
+.jr-s .st-a.hot{border-color:var(--gold);color:var(--gold-deep);font-weight:700}
+.jr-s .st-a.win{border-style:solid;border-color:#1f8a5b;color:#1f8a5b;font-weight:800}
+.jr-s small{margin-left:4px;color:var(--muted);font-size:11px}
+.jr-s .arr{font-style:normal;color:#b9b3a8}
+#st-act .st-bars li{grid-template-columns:150px 1fr 110px}

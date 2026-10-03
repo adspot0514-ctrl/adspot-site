@@ -482,8 +482,34 @@
       $('#st-pages').innerHTML = j.pages.length ? '<table><thead><tr><th>페이지</th><th>방문 수</th><th>방문자</th><th>상담 신청</th><th>전환율</th></tr></thead><tbody>' +
         j.pages.map(function(p){ return '<tr><th><a href="' + esc(p.path) + '" target="_blank" rel="noopener">' + esc(PAGE_NAMES[p.path] || p.path) + '</a></th><td>' + num(p.views) + '</td><td>' + num(p.visitors) + '</td><td>' + num(p.inquiries) + '</td><td>' + pct(p.inquiries, p.visitors) + '</td></tr>'; }).join('') + '</tbody></table>'
         : '<p class="empty-s">아직 데이터가 없습니다.</p>';
-      $('#st-src').innerHTML = bars(j.sources);
+      var CH_COLOR = {'광고':'ad', '자연 유입':'org', '직접·기타':'etc'};
+      $('#st-ch').innerHTML = (j.channels || []).map(function(c){
+        return '<div class="ch ' + CH_COLOR[c.name] + '"><b>' + c.name + '</b><dl><dt>방문 수</dt><dd>' + num(c.views) + '</dd><dt>방문자</dt><dd>' + num(c.visitors) + '</dd><dt>상담 신청</dt><dd>' + num(c.inquiries) + '</dd><dt>전환율</dt><dd>' + pct(c.inquiries, c.visitors) + '</dd></dl></div>'; }).join('');
+      var det = j.sourcesDetail || [];
+      $('#st-src').innerHTML = det.length ? '<ul class="st-bars">' + det.map(function(x){ var max = det[0].count || 1;
+        return '<li><span class="l"><i class="tag ' + CH_COLOR[x.group] + '">' + (x.group === '자연 유입' ? '자연' : x.group === '광고' ? '광고' : '직접') + '</i>' + esc(x.name) + '</span><span class="b"><i style="width:' + Math.max(3, x.count / max * 100) + '%"></i></span><span class="n">' + num(x.count) + (x.inquiries ? ' · 신청 ' + x.inquiries : '') + '</span></li>'; }).join('') + '</ul>' : '<p class="empty-s">아직 데이터가 없습니다.</p>';
       $('#st-region').innerHTML = bars(j.regions, AD_REGION);
+      var sec2 = function(n){ n = +n || 0; return n >= 60 ? Math.floor(n / 60) + '분 ' + (n % 60) + '초' : n + '초'; };
+      var pname = function(p){ return PAGE_NAMES[p] || p; };
+      $('#st-land').innerHTML = (j.landings || []).length ? '<table><thead><tr><th>첫 페이지</th><th>방문</th><th>광고 유입</th><th>이탈률</th><th>평균 머문 시간</th><th>연락</th><th>상담 신청</th></tr></thead><tbody>' +
+        j.landings.map(function(l){ return '<tr><th>' + esc(pname(l.path)) + '</th><td>' + num(l.sessions) + '</td><td>' + num(l.paid) + '</td><td>' + pct(l.bounce, l.sessions) + '</td><td>' + sec2(l.avgStay) + '</td><td>' + num(l.contact) + '</td><td>' + num(l.inquiries) + '</td></tr>'; }).join('') + '</tbody></table>'
+        : '<p class="empty-s">아직 데이터가 없습니다.</p>';
+      var tot = j.sessionsCount || 0;
+      $('#st-act').innerHTML = tot ? '<ul class="st-bars">' + (j.behavior || []).map(function(b){
+        return '<li><span class="l">' + esc(b.name) + '</span><span class="b"><i style="width:' + Math.max(2, b.sessions / tot * 100) + '%"></i></span><span class="n">' + num(b.sessions) + '명 · ' + pct(b.sessions, tot) + '</span></li>'; }).join('') + '</ul><p class="hint" style="margin:10px 0 0">전체 방문 ' + num(tot) + '건 중 해당 행동을 한 방문 수입니다.</p>'
+        : '<p class="empty-s">아직 데이터가 없습니다.</p>';
+      var GTAG = {'광고':'ad', '자연 유입':'org', '직접·기타':'etc'};
+      $('#st-journey').innerHTML = (j.journeys || []).length ? '<ol class="jr">' + j.journeys.map(function(x){
+        var d = new Date(x.start), hh = function(n){ return (n < 10 ? '0' : '') + n; };
+        var when = (d.getMonth() + 1) + '.' + d.getDate() + ' ' + hh(d.getHours()) + ':' + hh(d.getMinutes());
+        var steps = x.steps.map(function(st){
+          if(st.kind === 'page') return '<span class="st-p">' + esc(pname(st.p)) + '</span>';
+          var cls = /상담 신청/.test(st.a) ? 'st-a win' : /전화|카톡/.test(st.a) ? 'st-a hot' : 'st-a';
+          return '<span class="' + cls + '">' + esc(st.a) + (st.val && !/^\d+$/.test(st.val) && st.a !== '전화 클릭' ? ' · ' + esc(st.val) : '') + '<small>' + sec2(st.sec) + '</small></span>';
+        }).join('<i class="arr">›</i>');
+        return '<li' + (x.converted ? ' class="conv"' : '') + '><div class="jr-h"><b>' + when + '</b><i class="tag ' + (GTAG[x.group] || 'etc') + '">' + esc(x.src || '확인 불가') + '</i>' + (x.kw ? '<span class="kw">키워드: ' + esc(x.kw) + '</span>' : '') +
+          '<span class="meta">' + (x.dev === 'm' ? '모바일' : 'PC') + ' · ' + x.pages + '페이지 · ' + sec2(x.stay) + (x.converted ? ' · <b class="ok">상담 신청</b>' : x.contacted ? ' · <b class="hot">연락 시도</b>' : '') + '</span></div><div class="jr-s">' + steps + '</div></li>'; }).join('') + '</ol>'
+        : '<p class="empty-s">아직 데이터가 없습니다.</p>';
       $('#st-kw').innerHTML = bars(j.keywords);
       $('#st-dev').innerHTML = bars(j.devices, DEV);
     }).catch(function(err){ $('#st-cards').innerHTML = '<p class="empty-s">' + esc(err.message) + '</p>'; });

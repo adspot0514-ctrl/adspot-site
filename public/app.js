@@ -27,7 +27,7 @@ var __adspotStart = function(C){
     });
   })();
 
-  /* ---------------- 방문 통계 (개인정보 없이 페이지·유입 경로만 기록) ---------------- */
+  /* ---------------- 방문 통계 · 행동 기록 (개인정보 없이 페이지·유입 경로·행동만 기록) ---------------- */
   (function(){
     try{
       if(location.protocol === 'file:' || /^\/admin/.test(location.pathname)) return;
@@ -37,14 +37,56 @@ var __adspotStart = function(C){
       var saved = null; try{ saved = JSON.parse(sessionStorage.getItem('adspot-src') || 'null'); }catch(e){}
       var host = ''; try{ host = document.referrer ? new URL(document.referrer).hostname : ''; }catch(e){}
       var ext = host && host !== location.hostname;
-      var s = q.get('n_media') ? '네이버 광고' : (q.get('utm_source') || (ext ? (/naver/.test(host) ? '네이버 검색' : /google/.test(host) ? '구글 검색' : /daum/.test(host) ? '다음 검색' : /kakao/.test(host) ? '카카오' : /bing/.test(host) ? '빙 검색' : '다른 사이트')
-            : ((saved && saved.src) || (host ? '사이트 내 이동' : '직접 방문'))));
+      // 유입 채널 판별: 광고(파워링크) 표시가 있으면 광고, 아니면 들어온 곳(검색·블로그·카페 등)
+      var paid = q.get('n_media') || q.get('ch') === 'pl' || /^(cpc|ppc|paid|powerlink)$/i.test(q.get('utm_medium') || '') || !!q.get('r');   // 지역 광고 랜딩(?r=)은 광고 전용 주소
+      var s = paid ? (q.get('n_media') || q.get('ch') === 'pl' || q.get('r') ? '네이버 파워링크' : '광고(' + (q.get('utm_source') || '기타') + ')')
+            : (q.get('utm_source') ? q.get('utm_source') : (ext ? (/blog\.naver/.test(host) ? '네이버 블로그' : /cafe\.naver/.test(host) ? '네이버 카페' : /(^|\.)naver\.com$/.test(host) ? '네이버 검색'
+              : /google\./.test(host) ? '구글 검색' : /daum\.net/.test(host) ? '다음 검색' : /kakao/.test(host) ? '카카오' : /bing\./.test(host) ? '빙 검색' : /(instagram|facebook|youtube)\./.test(host) ? 'SNS' : '다른 사이트')
+            : ((function(){ try{ return sessionStorage.getItem('adspot-entry'); }catch(e){ return ''; } })() || (saved && saved.src) || (host ? '사이트 내 이동' : '직접 방문'))));   // 사이트 안 이동은 처음 들어온 채널을 이어받음
+      // 이 방문(세션)이 처음 들어온 채널을 기억 → 상담 신청 때 함께 저장
+      try{ if(!sessionStorage.getItem('adspot-entry') && s !== '사이트 내 이동') sessionStorage.setItem('adspot-entry', s); }catch(e){}
       var r = (q.get('r') || (saved && saved.region) || '').toLowerCase().slice(0, 20);
       var k = q.get('n_keyword') || q.get('n_query') || q.get('utm_term') || (saved && saved.kw) || '';
-      if(q.get('n_media') || q.get('utm_source') || q.get('r')){ try{ sessionStorage.setItem('adspot-src', JSON.stringify({region: r, kw: k, src: s})); }catch(e){} }
-      var data = JSON.stringify({p: location.pathname, v: vid, s: s, r: r, k: k});
-      if(navigator.sendBeacon) navigator.sendBeacon('/api/track', new Blob([data], {type: 'application/json'}));
-      else fetch('/api/track', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: data, keepalive: true});
+      if(paid || q.get('utm_source')){ try{ sessionStorage.setItem('adspot-src', JSON.stringify({region: r, kw: k, src: s})); }catch(e){} }
+      var sid = sessionStorage.getItem('adspot-sid');
+      if(!sid){ sid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-5); sessionStorage.setItem('adspot-sid', sid); }
+      window.__adspotSid = sid;
+      var beacon = function(obj){
+        var data = JSON.stringify(obj);
+        if(navigator.sendBeacon) navigator.sendBeacon('/api/track', new Blob([data], {type: 'application/json'}));
+        else fetch('/api/track', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: data, keepalive: true});
+      };
+      beacon({p: location.pathname, v: vid, sid: sid, s: s, r: r, k: k});
+      var once = {};
+      var act = window.__adspotAct = function(a, val, uniq){
+        if(uniq){ if(once[a]) return; once[a] = 1; }
+        beacon({type: 'act', p: location.pathname, v: vid, sid: sid, a: String(a).slice(0, 40), val: val == null ? '' : String(val).slice(0, 60)});
+      };
+      // 클릭 행동 (전화 · 카톡 · 메뉴 · 상담 버튼 · 견적 계산기 · FAQ)
+      document.addEventListener('click', function(e){
+        var el = e.target.closest && e.target.closest('a, button, summary, [role=tab]'); if(!el) return;
+        var href = el.getAttribute('href') || '', txt = (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+        if(/^tel:/.test(href)) return act('전화 클릭', href.replace('tel:', ''));
+        if(/kakao/.test(href) || el.hasAttribute('data-kakao')) return act('카톡 클릭');
+        if(el.closest('#nav, .nav')) return act('메뉴 이동', txt);
+        if(el.closest('.faq-item') && el.tagName === 'SUMMARY') return act('FAQ 열기', txt);
+        if(el.closest('#est-tabs, .est-tabs') || (el.tagName === 'BUTTON' && el.closest('#pricing'))) return act('견적 계산기 사용', txt, true);
+        if(/^\/regions\//.test(href) || /marketing\/$/.test(href)) return act('안내 페이지 이동', txt);
+      }, true);
+      // 신청서 작성 시작 (처음 입력할 때 한 번)
+      document.addEventListener('focusin', function(e){ if(e.target.closest && e.target.closest('form') && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) act('신청서 작성 시작', '', true); }, true);
+      // 스크롤 깊이
+      var marks = [50, 90];
+      addEventListener('scroll', function(){
+        var h = document.documentElement.scrollHeight - innerHeight; if(h <= 0) return;
+        var pct = scrollY / h * 100;
+        while(marks.length && pct >= marks[0]){ var m = marks.shift(); act(m >= 90 ? '페이지 끝까지 스크롤' : '절반 이상 스크롤', '', true); }
+      }, {passive: true});
+      // 머문 시간 (페이지를 떠나거나 다른 앱으로 갈 때 기록)
+      var t0 = Date.now(), sent = false;
+      var stay = function(){ if(sent) return; var sec = Math.round((Date.now() - t0) / 1000); if(sec >= 1){ sent = true; act('머문 시간', sec); } };
+      addEventListener('pagehide', stay);
+      document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') stay(); });
     }catch(e){}
   })();
 
@@ -59,7 +101,7 @@ var __adspotStart = function(C){
     var info = {
       region: REGION_NAMES[r] ? r : (saved && saved.region) || '',
       kw: q.get('n_keyword') || q.get('n_query') || q.get('utm_term') || (saved && saved.kw) || '',
-      src: q.get('n_media') ? '네이버 광고' : (q.get('utm_source') || (saved && saved.src) || (r ? '광고' : ''))
+      src: q.get('n_media') ? '네이버 파워링크' : (q.get('utm_source') || (saved && saved.src) || (r ? '광고' : ''))
     };
     if(!info.region && !info.kw && !info.src) return null;
     try{ sessionStorage.setItem('adspot-src', JSON.stringify(info)); }catch(e){}
@@ -1142,7 +1184,7 @@ var __adspotStart = function(C){
     var services = c.type === 'mix' ? c.items.map(function(it){ return it.name; }) : ['맞춤 견적'];
     fetch('/api/inquiry', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
       office:qmForm.office.value.trim(), phone:phone, field:c.field, services:services, message:comboText(c), agree:true,
-      hp:qmForm.website.value, source:'estimate', combo:c, ad: adInfo(), page: location.pathname
+      hp:qmForm.website.value, source:'estimate', combo:c, ad: adInfo(), page: location.pathname, entry: (function(){ try{ return sessionStorage.getItem('adspot-entry') || ''; }catch(e){ return ''; } })(), sid: window.__adspotSid || ''
     })})
       .then(function(r){ if(!r.ok) throw new Error('fail'); return r.json(); })
       .then(function(){
@@ -1170,7 +1212,7 @@ var __adspotStart = function(C){
       (form.message.value.trim() ? '\n내용: ' + form.message.value.trim() : '');
     var done = document.getElementById('iq-done'), d = document.getElementById('iq-done-d');
     var btn = form.querySelector('.iq-submit'); btn.disabled = true; var btnText = btn.textContent; btn.textContent = '접수 중…';
-    var payload = {office:form.office.value.trim(), phone:phone, field:iq.field || '', services:iq.services, message:form.message.value.trim(), agree:true, hp:(form.website && form.website.value) || '', page: location.pathname,
+    var payload = {office:form.office.value.trim(), phone:phone, field:iq.field || '', services:iq.services, message:form.message.value.trim(), agree:true, hp:(form.website && form.website.value) || '', page: location.pathname, entry: (function(){ try{ return sessionStorage.getItem('adspot-entry') || ''; }catch(e){ return ''; } })(), sid: window.__adspotSid || '',
       ad: adInfo()};
     // 1순위: 홈페이지 서버에 접수 → 관리자 페이지에서 확인
     fetch('/api/inquiry', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)})

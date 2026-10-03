@@ -95,6 +95,12 @@ async function serveFromKV(request, env, file) {
   return new Response(head ? null : buf, { status: 200, headers: { ...headers, "Content-Length": String(buf.length) } });
 }
 
+
+/* 유입 채널 묶음: 광고(파워링크 등) / 자연 유입 / 직접·기타 */
+const isPaid = (src) => /파워링크|^광고/.test(String(src || ""));
+const groupOf = (src) => isPaid(src) ? "광고" : (/^(직접 방문|사이트 내 이동)$/.test(String(src || "")) || !src ? "직접·기타" : "자연 유입");
+const inqChannel = (i) => i.entry || (i.ad && i.ad.src) || "";
+
 async function stats(env, days) {
   const D = await db(env);
   const today = kstDay();
@@ -115,7 +121,42 @@ async function stats(env, days) {
   const pmap = {};
   for (const p of pages) pmap[p.p] = { path: p.p, views: p.views, visitors: p.visitors, inquiries: 0 };
   for (const i of inq) { const p = i.page || "/"; (pmap[p] ||= { path: p, views: 0, visitors: 0, inquiries: 0 }).inquiries++; }
-  return { ok: true, days, from, to: today,
+  // 광고 vs 자연 유입: 방문은 기록된 채널, 신청은 그 방문자가 처음 들어온 채널 기준
+  const srcAll = await all("SELECT s, COUNT(*) AS views FROM events WHERE day >= ? GROUP BY s");
+  const groups = { "광고": { views: 0, v: 0, inq: 0 }, "자연 유입": { views: 0, v: 0, inq: 0 }, "직접·기타": { views: 0, v: 0, inq: 0 } };
+  for (const r of srcAll) groups[groupOf(r.s)].views += r.views;
+  const vrows = await all("SELECT s, v FROM events WHERE day >= ? AND v <> '' GROUP BY v, s");
+  const firstSrc = {};
+  for (const r of vrows) { const g = groupOf(r.s); if (!firstSrc[r.v] || g === "광고") firstSrc[r.v] = g; }  // 광고로 한 번이라도 들어온 방문자는 광고로
+  for (const g of Object.values(firstSrc)) groups[g].v++;
+  for (const i of inq) groups[groupOf(inqChannel(i))].inq++;
+  const channels = Object.entries(groups).map(([name, d]) => ({ name, views: d.views, visitors: d.v, inquiries: d.inq }));
+  const inqBySrc = {}; for (const i of inq) { const k = inqChannel(i) || "확인 불가"; inqBySrc[k] = (inqBySrc[k] || 0) + 1; }
+  // 방문 묶음(세션)별 흐름: 첫 페이지·행동·머문 시간
+  const pvs = await all("SELECT sid, t, p, s, k, d FROM events WHERE day >= ? AND sid <> '' ORDER BY t");
+  const acts = await all("SELECT sid, t, p, a, val FROM acts WHERE day >= ? AND sid <> '' ORDER BY t");
+  const S = {};
+  for (const e of pvs) { const x = (S[e.sid] ||= { sid: e.sid, start: e.t, landing: e.p, src: e.s, kw: e.k, dev: e.d, pages: 0, steps: [], acts: {}, stay: 0 }); x.pages++; x.steps.push({ t: e.t, kind: "page", p: e.p }); if (e.s && !x.src) x.src = e.s; }
+  for (const a of acts) { const x = S[a.sid]; if (!x) continue;
+    if (a.a === "머문 시간") { x.stay += +a.val || 0; continue; }
+    x.acts[a.a] = (x.acts[a.a] || 0) + 1; x.steps.push({ t: a.t, kind: "act", a: a.a, val: a.val, p: a.p }); }
+  const sessions = Object.values(S);
+  const ACTIONS = ["전화 클릭", "카톡 클릭", "견적 계산기 사용", "신청서 작성 시작", "상담 신청", "FAQ 열기", "절반 이상 스크롤", "페이지 끝까지 스크롤", "메뉴 이동", "안내 페이지 이동"];
+  const behavior = ACTIONS.map((a) => ({ name: a, sessions: sessions.filter((x) => x.acts[a]).length, count: sessions.reduce((n, x) => n + (x.acts[a] || 0), 0) }));
+  const L = {};
+  for (const x of sessions) {
+    const l = (L[x.landing] ||= { path: x.landing, sessions: 0, bounce: 0, stay: 0, contact: 0, inquiries: 0, paid: 0 });
+    l.sessions++; if (x.pages === 1 && !Object.keys(x.acts).length) l.bounce++;
+    l.stay += x.stay; if (x.acts["전화 클릭"] || x.acts["카톡 클릭"]) l.contact++; if (x.acts["상담 신청"]) l.inquiries++; if (isPaid(x.src)) l.paid++;
+  }
+  const landings = Object.values(L).map((l) => ({ ...l, avgStay: l.sessions ? Math.round(l.stay / l.sessions) : 0 })).sort((a, b) => b.sessions - a.sessions);
+  const journeys = sessions.sort((a, b) => b.start - a.start).slice(0, 25).map((x) => ({
+    start: x.start, src: x.src, group: groupOf(x.src), kw: x.kw, dev: x.dev, landing: x.landing, pages: x.pages, stay: x.stay,
+    converted: !!x.acts["상담 신청"], contacted: !!(x.acts["전화 클릭"] || x.acts["카톡 클릭"]),
+    steps: x.steps.sort((a, b) => a.t - b.t).slice(0, 30).map((st) => ({ sec: Math.round((st.t - x.start) / 1000), kind: st.kind, p: st.p, a: st.a || "", val: st.val || "" })),
+  }));
+  return { ok: true, days, from, to: today, channels, landings, behavior, sessionsCount: sessions.length, journeys,
+    sourcesDetail: src.map((r) => ({ name: r.name, count: r.count, group: groupOf(r.name), inquiries: inqBySrc[r.name] || 0 })),
     totals: { views: (tot[0] && tot[0].views) || 0, visitors: (tot[0] && tot[0].visitors) || 0, inquiries: inq.length },
     daily: dayList.map((day) => ({ day, views: (dmap[day] && dmap[day].views) || 0, visitors: (dmap[day] && dmap[day].visitors) || 0,
       inquiries: inq.filter((i) => kstDay(new Date(i.createdAt).getTime()) === day).length })),
@@ -170,11 +211,13 @@ export async function onRequest({ request, env }) {
         createdAt: new Date(now).toISOString(),
         office: clip(body.office, 80), phone, field: clip(body.field, 40),
         services: Array.isArray(body.services) ? body.services.slice(0, 6).map((s) => clip(s, 30)) : [],
-        message: clip(body.message, 2000), page: clip(body.page, 120),
+        message: clip(body.message, 2000), page: clip(body.page, 120), entry: clip(body.entry, 40), sid: clip(body.sid, 24),
         ad: body.ad && typeof body.ad === "object" ? { region: clip(body.ad.region, 20), src: clip(body.ad.src, 40), kw: clip(body.ad.kw, 80) } : null,
         source: body.source === "estimate" ? "estimate" : "form", combo: sanitizeCombo(body.combo), status: "new", memo: "",
       };
       await putInquiry(env, rec);
+      if (rec.sid) await (await db(env)).prepare("INSERT INTO acts (day, t, sid, v, p, a, val) VALUES (?, ?, ?, '', ?, '상담 신청', ?)")
+        .bind(kstDay(now), now, rec.sid, rec.page || "/", rec.source === "estimate" ? "견적 조합" : "신청서").run();
       return json({ ok: true, id: rec.id });
     }
 
@@ -187,8 +230,14 @@ export async function onRequest({ request, env }) {
       const body = await request.json().catch(() => ({}));
       const p = clip(body.p, 120);
       if (!p.startsWith("/") || p.startsWith("/admin") || p.startsWith("/api")) return new Response(null, { status: 204 });
-      await (await db(env)).prepare("INSERT INTO events (day, t, p, v, s, r, k, d) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-        .bind(kstDay(), Date.now(), p, clip(body.v, 24), clip(body.s, 30), clip(body.r, 20), clip(body.k, 60), /Mobi|Android|iPhone|iPad/i.test(ua) ? "m" : "pc").run();
+      const D = await db(env);
+      if (body.type === "act") {
+        await D.prepare("INSERT INTO acts (day, t, sid, v, p, a, val) VALUES (?, ?, ?, ?, ?, ?, ?)")
+          .bind(kstDay(), Date.now(), clip(body.sid, 24), clip(body.v, 24), p, clip(body.a, 40), clip(body.val, 60)).run();
+        return new Response(null, { status: 204 });
+      }
+      await D.prepare("INSERT INTO events (day, t, p, v, s, r, k, d, sid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .bind(kstDay(), Date.now(), p, clip(body.v, 24), clip(body.s, 30), clip(body.r, 20), clip(body.k, 60), /Mobi|Android|iPhone|iPad/i.test(ua) ? "m" : "pc", clip(body.sid, 24)).run();
       return new Response(null, { status: 204 });
     }
 
