@@ -417,14 +417,72 @@
       f('검색 제목', 'rg_title', val('title'), {hint:'40자 안팎 권장'}) + f('검색 설명', 'rg_desc', val('desc'), {area:true, rows:2, hint:'80~120자 권장'}), true);
     h += sec('페이지 첫 화면', '큰 제목과 소개 문장',
       f('큰 제목', 'rg_h1', val('h1'), {area:true, rows:2, hint:'줄바꿈 가능'}) + f('소개 문장', 'rg_lead', val('lead'), {area:true, rows:3}), true);
-    h += sec(esc(d.name) + ' 지역 추천 패키지', '월 건수 (금액은 자동 계산)',
-      '<div class="grid3">' + f('대표 카페 (건)', 'pk_cafe', pk.cafe, {type:'number', attrs:' min="0" max="999"'}) + f('인플루언서 블로그 (건)', 'pk_influencer', pk.influencer, {type:'number', attrs:' min="0" max="999"'}) + f('준최적화 블로그 (건)', 'pk_blog', pk.blog, {type:'number', attrs:' min="0" max="999"'}) + '</div><p class="hint" id="rg-total"></p>', true);
+    h += '<div id="rg-pkg-wrap">' + sec(esc(d.name) + ' 지역 추천 패키지', '월 건수 (금액은 자동 계산)',
+      '<div class="grid3">' + f('대표 카페 (건)', 'pk_cafe', pk.cafe, {type:'number', attrs:' min="0" max="999"'}) + f('인플루언서 블로그 (건)', 'pk_influencer', pk.influencer, {type:'number', attrs:' min="0" max="999"'}) + f('준최적화 블로그 (건)', 'pk_blog', pk.blog, {type:'number', attrs:' min="0" max="999"'}) + '</div><p class="hint" id="rg-total"></p>', true) + '</div>';
     h += sec(esc(d.name) + ' 이야기 · 사례', '입력하면 페이지에 새 영역으로 표시됩니다 (비우면 숨김)',
       f('지역 이야기', 'rg_story', s.story || '', {area:true, rows:6, hint:'실제 진행 사례, 지역 특징 등. 빈 줄로 문단 구분'}), true);
     h += sec('자주 묻는 질문', '질문과 답변 3개',
       fq.map(function(q, i){ return '<div class="item"><div class="item-head">질문 ' + (i + 1) + '</div>' + f('질문', 'rg_q' + i, q.q) + f('답변', 'rg_a' + i, q.a, {area:true, rows:3}) + '</div>'; }).join(''));
+    h += '<div id="rg-extra"><p class="hint">페이지 세부 문구·사진을 불러오는 중…</p></div>';
     $('#rg-form').innerHTML = h; rgTotal(); rgMark(false);
+    rgLoadExtra(rgSlug, s);
   }
+  /* ---------- 지역 페이지 세부 문구·사진 (페이지에 표시된 항목을 읽어 자동으로 칸을 만듦) ---------- */
+  var rgDef = {}, rgImgDef = {}, rgImg = {};
+  function rgElText(el){
+    var t = el.getAttribute('data-et');
+    if(t === 'tags' || t === 'tags-main' || t === 'li') return Array.prototype.map.call(el.children, function(c){ return c.textContent.trim(); }).filter(Boolean).join(', ');
+    var tmp = document.createElement('div'); tmp.innerHTML = el.innerHTML.replace(/<br\s*\/?>/gi, '\n');
+    return tmp.textContent.replace(/[ \t]+\n/g, '\n').trim();
+  }
+  function rgImgBox(key, label, url){
+    var changed = !!rgImg[key];
+    return '<div class="media" data-rg-ikey="' + esc(key) + '"><div class="m-label">' + esc(label) + '</div><div class="m-prev"><img src="' + esc(url) + '" alt=""><span class="m-badge">사진</span></div>' +
+      '<div class="m-act"><label class="btn btn-primary">사진 바꾸기<input type="file" accept="image/*" data-rg-img hidden></label>' +
+      '<button type="button" class="btn" data-rg-img-reset' + (changed ? '' : ' disabled') + '>기본 사진으로</button></div><div class="m-status"></div></div>';
+  }
+  function rgLoadExtra(slug, s){
+    var box = $('#rg-extra'); rgDef = {}; rgImgDef = {}; rgImg = Object.assign({}, (s && s.img) || {});
+    fetch('/regions/' + slug + '/?admin-raw=1', {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); }).then(function(html){
+      if(slug !== rgSlug) return;
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      $('#rg-pkg-wrap').hidden = !doc.querySelector('[data-pkg]');
+      var groups = [], byName = {};
+      var add = function(g, item){ if(!byName[g]){ byName[g] = []; groups.push(g); } byName[g].push(item); };
+      doc.querySelectorAll('[data-e],[data-ei]').forEach(function(el){
+        var lab = (el.getAttribute('data-el') || '').split('|'), g = lab[0] || '기타', name = lab[1] || '';
+        if(el.hasAttribute('data-ei')){ var k = el.getAttribute('data-ei'); rgImgDef[k] = el.getAttribute('src'); add(g, {img:true, key:k, name:name}); }
+        else { var k2 = el.getAttribute('data-e'); rgDef[k2] = rgElText(el); add(g, {key:k2, name:name}); }
+      });
+      if(!groups.length){ box.innerHTML = ''; return; }
+      var tx = (s && s.text) || {};
+      box.innerHTML = '<p class="hint" style="margin:18px 0 10px">아래는 페이지의 세부 문구와 사진입니다. 바꾼 칸만 저장되고, 나머지는 기본 문구가 그대로 쓰입니다.</p>' +
+        groups.map(function(g){
+          var items = byName[g];
+          var body = items.filter(function(it){ return it.img; }).map(function(it){ return rgImgBox(it.key, it.name, rgImg[it.key] ? srcOf(rgImg[it.key]) : rgImgDef[it.key]); }).join('');
+          body += items.filter(function(it){ return !it.img; }).map(function(it){
+            var v = (tx[it.key] !== undefined && tx[it.key] !== '') ? tx[it.key] : rgDef[it.key];
+            var long = v.length > 38 || v.indexOf('\n') > -1;
+            return f(esc(it.name), 'rx_' + it.key, v, long ? {area:true, rows:Math.min(5, Math.max(2, Math.ceil(v.length / 45)))} : {});
+          }).join('');
+          return sec(esc(g), items.length + '개 항목', body);
+        }).join('');
+    }).catch(function(){ if(slug === rgSlug) box.innerHTML = '<p class="hint">세부 문구를 불러오지 못했습니다. 페이지를 새로고침해 주세요.</p>'; });
+  }
+  $('#rg-form').addEventListener('change', function(e){
+    var inp = e.target;
+    if(!inp.hasAttribute('data-rg-img') || !inp.files[0]) return;
+    var mb = inp.closest('.media'), key = mb.dataset.rgIkey, st = $('.m-status', mb);
+    uploadFile(inp.files[0], {max:2000}, function(t){ st.textContent = t; }).then(function(m){
+      rgImg[key] = m.url; $('.m-prev img', mb).src = srcOf(m.url); $('[data-rg-img-reset]', mb).disabled = false;
+      st.textContent = '올렸습니다. 저장하기를 누르면 페이지에 반영됩니다.'; rgMark(true);
+    }).catch(function(err){ st.textContent = err.message; }).then(function(){ inp.value = ''; });
+  });
+  $('#rg-form').addEventListener('click', function(e){
+    var b = e.target.closest('[data-rg-img-reset]'); if(!b) return;
+    var mb = b.closest('.media'), key = mb.dataset.rgIkey;
+    delete rgImg[key]; $('.m-prev img', mb).src = rgImgDef[key]; b.disabled = true; $('.m-status', mb).textContent = '기본 사진으로 바꿨습니다. 저장하기를 누르면 반영됩니다.'; rgMark(true);
+  });
   $('#rg-form').addEventListener('input', function(){ rgMark(true); rgTotal(); });
   function rgCollect(){
     var d = RD[rgSlug], f = $('#rg-form'), v = function(n){ var el = $('[name=' + n + ']', f); return el ? el.value.trim() : ''; };
@@ -434,6 +492,11 @@
     // 기본값과 같은 문구는 저장하지 않음 (나중에 기본 문구가 바뀌어도 따라가도록)
     ['title','desc','h1','lead'].forEach(function(k){ if(o[k] === d[k]) o[k] = ''; });
     o.faq = o.faq.map(function(q, i){ return {q: q.q === d.faq[i].q ? '' : q.q, a: q.a === d.faq[i].a ? '' : q.a}; });
+    var text = {};
+    Object.keys(rgDef).forEach(function(k){ var el = $('[name="rx_' + k + '"]', f); if(!el) return; var val = el.value.trim(); if(val && val !== rgDef[k]) text[k] = val; });
+    if(Object.keys(text).length) o.text = text;
+    var img = {}; Object.keys(rgImg).forEach(function(k){ if(rgImg[k] && rgImgDef.hasOwnProperty(k)) img[k] = rgImg[k]; });
+    if(Object.keys(img).length) o.img = img;
     return o;
   }
   function rgPut(pages, okMsg){

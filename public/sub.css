@@ -418,3 +418,4 @@ body{overflow-wrap:break-word}
   .flow li::before{width:38px;height:38px;font-size:15px}
   .band{min-height:340px}
 }
+.mk-stat b i.mk-n{font-style:normal}

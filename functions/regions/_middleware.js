@@ -6,6 +6,8 @@ export async function onRequest({ request, env, next }) {
   const res = await next();
   const slug = (new URL(request.url).pathname.match(/^\/regions\/([a-z-]+)\/?$/) || [])[1];
   if (!slug || !(res.headers.get("content-type") || "").includes("text/html")) return res;
+  // 관리자 화면이 기본 문구를 읽을 때는 저장본을 끼워 넣지 않음
+  if (new URL(request.url).searchParams.has("admin-raw")) return res;
   let data = null;
   try { data = await kvGet(env, "content"); } catch (e) { return res; }
   const rp = data && data.regionPages && data.regionPages[slug];
