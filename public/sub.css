@@ -419,3 +419,4 @@ body{overflow-wrap:break-word}
   .band{min-height:340px}
 }
 .mk-stat b i.mk-n{font-style:normal}
+main>section[id]{scroll-margin-top:72px}
