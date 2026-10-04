@@ -69,7 +69,8 @@
 - [수원 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/suwon/): 경기도 수원시
 - [성남·분당 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/seongnam/): 경기도 성남시
 - [용인 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/yongin/): 경기도 용인시
-- [화성·동탄 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/hwaseong/): 경기도 화성시
+- [화성 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/hwaseong/): 경기도 화성시
+- [동탄 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/dongtan/): 경기도 화성시 동탄구
 - [고양·일산 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/goyang/): 경기도 고양시
 - [파주 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/paju/): 경기도 파주시
 - [부천 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/bucheon/): 경기도 부천시

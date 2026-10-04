@@ -73,6 +73,7 @@
         var src = /^(https?:)?\//.test(x.url) ? x.url : '/' + x.url;
         return '<li><img loading="lazy" src="' + esc(src) + '" alt="' + esc(x.name || '') + '"></li>'; }).join('');
     });
+    initCalc(plans, fields);
     // 상담 신청서 분야 선택지
     document.querySelectorAll('[data-sub="field-options"]').forEach(function(sel){
       var cur = sel.value;
@@ -178,6 +179,108 @@
         .catch(function(){ msg.textContent = '접수 중 문제가 생겼습니다. 전화나 카카오톡으로 문의해 주세요.'; msg.classList.add('err'); })
         .then(function(){ btn.disabled = false; btn.textContent = label; });
     });
+  });
+
+  /* ---------------- 지역 페이지 월 광고비 계산기 ---------------- */
+  function initCalc(plans, fields){
+    var box = document.querySelector('[data-calc]'); if(!box || !plans || !plans.length) return;
+    var region = box.getAttribute('data-calc');
+    var pk = document.querySelector('[data-pkg]');
+    var num = function(el, k){ return el ? (+el.getAttribute('data-' + k) || 0) : 0; };
+    var opts = [];
+    if(pk) opts.push({name: region + ' 추천', field: '', mix: {cafe: num(pk,'cafe'), influencer: num(pk,'influencer'), blog: num(pk,'blog')}});
+    (fields || []).forEach(function(f){ opts.push({name: f.name, field: f.name, mix: f.mix}); });
+    var won = function(n){ return (Math.round(n) || 0).toLocaleString('ko-KR'); };
+    var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+    var qty = {}, cur = 0;
+    var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // 금액이 바뀔 때 숫자가 굴러가듯 올라가거나 내려감 (메인 페이지와 같은 느낌)
+    function roll(el, to){
+      var from = +el.getAttribute('data-v') || 0; el.setAttribute('data-v', to);
+      if(el._raf) cancelAnimationFrame(el._raf);
+      if(still || from === to){ el.textContent = won(to); return; }
+      var t0 = null, dur = 520;
+      (function step(t){
+        if(t0 === null) t0 = t;
+        var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = won(from + (to - from) * e);
+        if(k < 1) el._raf = requestAnimationFrame(step);
+      })(performance.now());
+    }
+    box.innerHTML =
+      '<div class="calc-tabs" role="tablist" aria-label="분야 선택">' + opts.map(function(o, i){ return '<button type="button" role="tab" class="calc-tab" aria-selected="' + (i === 0) + '" data-i="' + i + '">' + esc(o.name) + '</button>'; }).join('') + '</div>' +
+      '<ul class="calc-rows">' + plans.map(function(p){
+        return '<li class="calc-row" data-k="' + esc(p.key) + '"><div class="calc-name"><b>' + esc(p.name) + '</b><small>건당 ' + won(p.price) + '원</small></div>' +
+          '<div class="calc-qty"><button type="button" data-d="-1" aria-label="' + esc(p.name) + ' 1건 줄이기">−</button><output aria-live="polite">0</output><span>건</span><button type="button" data-d="1" aria-label="' + esc(p.name) + ' 1건 늘리기">+</button></div>' +
+          '<p class="calc-sub"><b>0</b>원</p></li>'; }).join('') + '</ul>' +
+      '<div class="calc-total"><div><p class="calc-label">월 예상 금액 <span>부가세 별도</span></p><p class="calc-sum"><b>0</b>원</p></div><p class="calc-vat">부가세 포함 <span>0</span>원</p></div>' +
+      '<button type="button" class="btn btn-gold calc-cta">이 조합으로 상담 신청</button>';
+    function render(){
+      var total = 0;
+      plans.forEach(function(p){
+        var row = box.querySelector('.calc-row[data-k="' + p.key + '"]'), n = qty[p.key] || 0, sub = n * p.price; total += sub;
+        row.querySelector('output').textContent = n; roll(row.querySelector('.calc-sub b'), sub);
+      });
+      roll(box.querySelector('.calc-sum b'), total);
+      roll(box.querySelector('.calc-vat span'), Math.round(total * 1.1));
+      return total;
+    }
+    function pick(i){
+      cur = i; plans.forEach(function(p){ qty[p.key] = +opts[i].mix[p.key] || 0; });
+      box.querySelectorAll('.calc-tab').forEach(function(t){ t.setAttribute('aria-selected', String(+t.getAttribute('data-i') === i)); });
+      render();
+    }
+    box.addEventListener('click', function(e){
+      var t = e.target.closest('.calc-tab'); if(t){ pick(+t.getAttribute('data-i')); return; }
+      var b = e.target.closest('.calc-qty button');
+      if(b){ var k = b.closest('.calc-row').getAttribute('data-k'); qty[k] = Math.max(0, Math.min(99, (qty[k] || 0) + (+b.getAttribute('data-d')))); render(); return; }
+      if(e.target.closest('.calc-cta')){
+        var total = render(), o = opts[cur];
+        var items = plans.filter(function(p){ return qty[p.key]; }).map(function(p){ return p.name + ' ' + qty[p.key] + '건'; });
+        var form = document.querySelector('form.rform');
+        if(form){
+          if(o.field && form.field) form.field.value = o.field;
+          form.message.value = '[견적 조합] ' + o.name + ' / ' + (items.join(', ') || '건수 미선택') + ' / 월 예상 ' + won(total) + '원(부가세 별도)';
+          var target = document.getElementById('apply') || form;
+          target.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start'});
+          setTimeout(function(){ try{ form.phone.focus({preventScroll: true}); }catch(e2){ form.phone.focus(); } }, 450);
+        }
+      }
+    });
+    pick(0);
+  }
+
+  initCalc((D.plans || []), (D.fields || []).filter(function(f){ return f && f.name && f.mix; }));
+
+  /* ---------------- 무료 노출 진단 버튼 → 상담 신청서 채우기 ---------------- */
+  document.querySelectorAll('[data-diag]').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      var form = document.querySelector('form.rform'); if(!form) return;
+      e.preventDefault();
+      form.message.value = '[무료 노출 진단 요청] ' + btn.getAttribute('data-diag') + ' 지역 키워드 노출 상태 진단을 받고 싶습니다.';
+      var target = document.getElementById('apply') || form;
+      target.scrollIntoView({behavior: (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'auto' : 'smooth', block: 'start'});
+      setTimeout(function(){ try{ form.phone.focus({preventScroll: true}); }catch(e2){ form.phone.focus(); } }, 450);
+    });
+  });
+
+  /* ---------------- 생활권 탭 ---------------- */
+  document.querySelectorAll('.zt').forEach(function(box){
+    box.classList.add('js-zt');
+    var tabs = [].slice.call(box.querySelectorAll('.zt-tab')), panels = [].slice.call(box.querySelectorAll('.zt-panel'));
+    function show(i, focus){
+      tabs.forEach(function(t, k){ t.setAttribute('aria-selected', String(k === i)); t.tabIndex = k === i ? 0 : -1; });
+      panels.forEach(function(p, k){ p.hidden = k !== i; });
+      if(focus) tabs[i].focus();
+    }
+    tabs.forEach(function(t, i){
+      t.addEventListener('click', function(){ show(i); });
+      t.addEventListener('keydown', function(e){
+        var n = tabs.length, j = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+        if(j > -1){ e.preventDefault(); show(j, true); }
+      });
+    });
+    show(0);
   });
 
   var ctl = ('AbortController' in window) ? new AbortController() : null;
