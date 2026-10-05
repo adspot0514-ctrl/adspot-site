@@ -116,3 +116,12 @@
 - [당진 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/dangjin/): 충청남도 당진시
 - [구리 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/guri/): 경기도 구리시
 - [양주 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/yangju/): 경기도 양주시
+- [안동 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/andong/): 경상북도 안동시
+- [제천 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/jecheon/): 충청북도 제천시
+- [통영 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/tongyeong/): 경상남도 통영시
+- [홍성 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/hongseong/): 충청남도 홍성군
+- [밀양 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/miryang/): 경상남도 밀양시
+- [영주 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/yeongju/): 경상북도 영주시
+- [보령 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/boryeong/): 충청남도 보령시
+- [상주 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/sangju/): 경상북도 상주시
+- [포천 변호사마케팅](https://xn--hy1bj5x75biyv.com/regions/pocheon/): 경기도 포천시
