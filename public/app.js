@@ -164,7 +164,10 @@ var __adspotStart = function(C){
       el.parentNode.replaceChild(node, el);
     });
     // 포트폴리오 로고
-    var PF = has(C.portfolio) ? C.portfolio.filter(function(p){ return p && p.url; }) : null;
+    // 예전 기본 로고 7개가 그대로 저장돼 있으면 새 기본 목록을 사용 (로고 추가가 가려지지 않게)
+    var PF_LEGACY = ['assets/portfolio/jeiel.png','assets/portfolio/changkyung.png','assets/portfolio/yungang.png','assets/portfolio/anlab.png','assets/portfolio/saero.png','assets/portfolio/central.png','assets/portfolio/simpyeong.png'];
+    var isLegacy = Array.isArray(C.portfolio) && C.portfolio.length === PF_LEGACY.length && C.portfolio.every(function(p, i){ return p && p.url === PF_LEGACY[i]; });
+    var PF = (has(C.portfolio) && !isLegacy) ? C.portfolio.filter(function(p){ return p && p.url; }) : null;
     if(PF && PF.length && JSON.stringify(PF) !== JSON.stringify(D.portfolio)){
       var li = function(p, hidden){ return '<li><img src="' + esc(p.url) + '" alt="' + (hidden ? '' : esc(p.name || '')) + '" loading="lazy" decoding="async"></li>'; };
       var group = function(list){ return '<ul class="marquee-group">' + list.map(function(p){ return li(p); }).join('') + '</ul><ul class="marquee-group" aria-hidden="true">' + list.map(function(p){ return li(p, true); }).join('') + '</ul>'; };

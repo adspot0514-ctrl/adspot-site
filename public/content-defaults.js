@@ -139,6 +139,26 @@ window.ADSPOT_DEFAULTS = {
     {
         "name": "법무법인 심평",
         "url": "assets/portfolio/simpyeong.png"
+    },
+    {
+        "name": "ARIS International Lawyers",
+        "url": "assets/portfolio/airs.png"
+    },
+    {
+        "name": "법률사무소 강물",
+        "url": "assets/portfolio/kangmul.png"
+    },
+    {
+        "name": "법무법인 기세",
+        "url": "assets/portfolio/gise.png"
+    },
+    {
+        "name": "법률사무소 위인",
+        "url": "assets/portfolio/wiin.png"
+    },
+    {
+        "name": "법무법인 주인",
+        "url": "assets/portfolio/juin.png"
     }
 ]
 };

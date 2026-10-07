@@ -137,7 +137,8 @@
       heroHeadline: Object.assign({}, D.heroHeadline, C.heroHeadline || {}),
       texts: Object.assign({}, D.texts, C.texts || {}),
       media: Object.assign({}, D.media, C.media || {}),
-      portfolio: pick(C.portfolio, D.portfolio).map(function(p){ return {name:p.name || '', url:p.url}; })
+      portfolio: (function(){ var L = ['assets/portfolio/jeiel.png','assets/portfolio/changkyung.png','assets/portfolio/yungang.png','assets/portfolio/anlab.png','assets/portfolio/saero.png','assets/portfolio/central.png','assets/portfolio/simpyeong.png']; var leg = Array.isArray(C.portfolio) && C.portfolio.length === L.length && C.portfolio.every(function(p, i){ return p && p.url === L[i]; });
+        return pick(leg ? null : C.portfolio, D.portfolio); })().map(function(p){ return {name:p.name || '', url:p.url}; })
     };
   }
   function f(label, name, value, opt){
