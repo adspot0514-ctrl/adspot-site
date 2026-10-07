@@ -283,10 +283,208 @@
     show(0);
   });
 
+  /* ---------------- 함께하는 시간: 메인과 같은 카운트업 → LIVE ---------------- */
+  function initClock(firmList){
+    var clock = document.querySelector('.tm-sec .clock'), list = clock && clock.querySelector('.clock-list'); if(!list) return;
+    var firms = (firmList || []).filter(function(f){ return f && f.name && !isNaN(new Date(f.start).getTime()); });
+    var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function pad(n){ return n < 10 ? '0' + n : '' + n; }
+    function parts(ms){ var t = Math.max(0, Math.floor(ms / 1000)); return {d:Math.floor(t / 86400).toLocaleString('ko-KR'), h:pad(Math.floor(t % 86400 / 3600)), m:pad(Math.floor(t % 3600 / 60)), s:pad(t % 60)}; }
+    var STRIP = ''; for(var q = 0; q < 20; q++) STRIP += '<i>' + (q % 10) + '</i>';
+    function buildGroup(el, str){
+      el.innerHTML = ''; var slots = [];
+      Array.from(str).forEach(function(ch){
+        if(/\d/.test(ch)){ var w = document.createElement('span'); w.className = 'dg'; var s = document.createElement('span'); s.className = 'dg-s'; s.innerHTML = STRIP; w.appendChild(s); el.appendChild(w); slots.push({s:s, idx:0}); }
+        else { var sep = document.createElement('span'); sep.className = 'dg-sep'; sep.textContent = ch; el.appendChild(sep); }
+      });
+      return slots;
+    }
+    function place(slot, idx, dur, delay){
+      slot.idx = idx;
+      slot.s.style.transition = dur ? 'transform ' + dur + 'ms cubic-bezier(.2,.8,.2,1) ' + (delay || 0) + 'ms' : 'none';
+      slot.s.style.transform = 'translate3d(0,' + (-idx * 1.12).toFixed(2) + 'em,0)';
+      clearTimeout(slot.t);
+      if(dur && idx >= 10) slot.t = setTimeout(function(){ place(slot, idx - 10, 0); }, dur + (delay || 0) + 40);
+    }
+    function roll(slots, str, dur){
+      var digits = str.replace(/\D/g, '');
+      slots.forEach(function(sl, i){ var nd = +digits[i], cur = sl.idx % 10; if(nd === cur) return; var steps = (nd - cur + 10) % 10; if(sl.idx >= 10) place(sl, sl.idx - 10, 0); void sl.s.offsetWidth; place(sl, sl.idx + steps, dur); });
+    }
+    function spin(slots, str, dur, baseDelay){
+      var digits = str.replace(/\D/g, '');
+      slots.forEach(function(sl){ place(sl, 0, 0); }); void (slots[0] && slots[0].s.offsetWidth);
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ slots.forEach(function(sl, i){ place(sl, 10 + (+digits[i]), dur, baseDelay + i * 45); }); }); });
+    }
+    var rows = firms.map(function(f){
+      var li = document.createElement('li'); li.className = 'clock-row';
+      li.innerHTML = '<div class="clock-meta"><span class="clock-name"></span><span class="clock-state">집계 중</span></div>' +
+        '<div class="timer" role="timer"><span class="n d"></span><span class="u">일</span><span class="c">:</span><span class="n h"></span><span class="u">시간</span><span class="c">:</span><span class="n m"></span><span class="u">분</span><span class="c">:</span><span class="n s"></span><span class="u">초</span></div>';
+      li.querySelector('.clock-name').textContent = f.name; list.appendChild(li);
+      var start = new Date(f.start).getTime(), p = parts(Date.now() - start);
+      var r = {el:li, start:start, state:li.querySelector('.clock-state'), busy:false, timerEl:li.querySelector('.timer')};
+      r.g = {d:buildGroup(li.querySelector('.d'), p.d.replace(/\d/g, '0')), h:buildGroup(li.querySelector('.h'), '00'), m:buildGroup(li.querySelector('.m'), '00'), s:buildGroup(li.querySelector('.s'), '00')};
+      return r;
+    });
+    var moreBtn = clock.querySelector('.clock-more');
+    if(moreBtn && firms.length > 3){ moreBtn.hidden = false; moreBtn.addEventListener('click', function(){ clock.classList.add('is-expanded'); }); }
+    function aria(r, p){ r.timerEl.setAttribute('aria-label', p.d + '일 ' + p.h + '시간 ' + p.m + '분 ' + p.s + '초'); }
+    function spinRow(r, i, dur, st){ var p = parts(Date.now() - r.start + dur); r.busy = true; var b = i * st; spin(r.g.d, p.d, dur, b); spin(r.g.h, p.h, dur, b + 80); spin(r.g.m, p.m, dur, b + 140); spin(r.g.s, p.s, dur, b + 200); aria(r, p); setTimeout(function(){ r.busy = false; tickRow(r); }, dur + b + 300); }
+    function tickRow(r){ if(r.busy) return; var p = parts(Date.now() - r.start); roll(r.g.d, p.d, 600); roll(r.g.h, p.h, 600); roll(r.g.m, p.m, 600); roll(r.g.s, p.s, 520); aria(r, p); }
+    function setStatic(r){ var p = parts(Date.now() - r.start); ['d','h','m','s'].forEach(function(k){ var dg = p[k].replace(/\D/g, ''); r.g[k].forEach(function(sl, i){ place(sl, +dg[i], 0); }); }); aria(r, p); }
+    var started = false, inView = false, replay = null, lastStart = 0, REPLAY = 5000, SPIN = 1400, STAG = 90;
+    function goLive(){
+      rows.forEach(function(r){ r.el.classList.add('is-live'); r.state.textContent = 'LIVE'; });
+      (function tick(){ rows.forEach(tickRow); clock.classList.add('colon-off'); setTimeout(function(){ clock.classList.remove('colon-off'); }, 500); setTimeout(tick, 1000 - (Date.now() % 1000) + 5); })();
+      schedule();
+    }
+    function schedule(){
+      clearTimeout(replay); if(reduceMotion) return;
+      var wait = Math.max(0, REPLAY - (performance.now() - lastStart));
+      replay = setTimeout(function(){ lastStart = performance.now(); if(inView && !document.hidden) rows.forEach(function(r, i){ spinRow(r, i, SPIN, STAG); }); schedule(); }, wait);
+    }
+    function countUp(){
+      if(started) return; started = true;
+      if(reduceMotion){ rows.forEach(setStatic); goLive(); return; }
+      lastStart = performance.now(); rows.forEach(function(r, i){ spinRow(r, i, 1800, 110); }); setTimeout(goLive, 1800 + 110 * rows.length);
+    }
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(function(en){ var was = inView; inView = en[0].isIntersecting; if(inView && !started) countUp(); else if(inView && !was && started){ lastStart = 0; schedule(); } }, {threshold:.08}).observe(clock);
+    } else countUp();
+  }
+
+  /* ---------------- 함께하는 시간 · 포트폴리오 (메인 페이지와 같은 데이터) ---------------- */
+  var PF_LEGACY = ['assets/portfolio/jeiel.png','assets/portfolio/changkyung.png','assets/portfolio/yungang.png','assets/portfolio/anlab.png','assets/portfolio/saero.png','assets/portfolio/central.png','assets/portfolio/simpyeong.png'];
+  var sharedDone = false;
+  function pfSrc(url){
+    var m = /^\/?assets\/portfolio\/([a-z0-9_-]+)\.png$/i.exec(url || '');
+    if(m) return '/assets/portfolio/sm/' + m[1] + '.webp';   // 기본 로고는 가벼운 버전
+    return /^(https?:|\/)/.test(url) ? url : '/' + url;
+  }
+  function initPortfolio(C){
+    var box = document.querySelector('.pf-sec'); if(!box) return;
+    var list = Array.isArray(C.portfolio) ? C.portfolio.filter(function(p){ return p && p.url; }) : [];
+    var legacy = list.length === PF_LEGACY.length && list.every(function(p, i){ return p.url === PF_LEGACY[i]; });
+    if(list.length && !legacy){
+      var li = function(p, h){ return '<li><img src="' + esc(pfSrc(p.url)) + '" alt="' + (h ? '' : esc(p.name || '')) + '" loading="lazy" decoding="async" height="52"></li>'; };
+      var grp = function(L){ return '<ul class="marquee-group">' + L.map(function(p){ return li(p); }).join('') + '</ul><ul class="marquee-group" aria-hidden="true">' + L.map(function(p){ return li(p, true); }).join('') + '</ul>'; };
+      var pc = box.querySelector('.marquee-pc'), mo = box.querySelector('.marquee-mo'), half = Math.ceil(list.length / 2);
+      if(pc) pc.innerHTML = '<div class="marquee-track">' + grp(list) + '</div>';
+      if(mo) mo.innerHTML = '<div class="marquee-track">' + grp(list.slice(0, half)) + '</div>' + (list.length > 1 ? '<div class="marquee-track is-reverse">' + grp(list.slice(half)) + '</div>' : '');
+    }
+    var SPEED_PC = 85, SPEED_MO = 55;
+    function setSpeed(){
+      var sp = window.matchMedia('(max-width:767px)').matches ? SPEED_MO : SPEED_PC;
+      box.querySelectorAll('.marquee-track').forEach(function(t){ var g = t.querySelector('.marquee-group'), w = g ? g.getBoundingClientRect().width : 0; if(w > 0) t.style.setProperty('--dur', (w / sp).toFixed(2) + 's'); });
+    }
+    setSpeed();
+    box.querySelectorAll('img').forEach(function(im){ if(!im.complete) im.addEventListener('load', setSpeed, {once:true}); });
+    var tm; window.addEventListener('resize', function(){ clearTimeout(tm); tm = setTimeout(setSpeed, 150); });
+  }
+  function applySharedTexts(C){
+    var TX = C.texts || {}, DT = D.texts || {};
+    document.querySelectorAll('.tm-sec [data-edit], .pf-sec [data-edit]').forEach(function(el){
+      var k = el.getAttribute('data-edit'), v = TX[k];
+      if(!has(v) || v === DT[k]) return;
+      el.innerHTML = esc(v).replace(/\[([^\]]+)\]/g, '<em>$1</em>').replace(/\n/g, '<br>');
+    });
+  }
+  function initShared(C){
+    if(sharedDone) return; sharedDone = true;
+    C = C || {};
+    applySharedTexts(C);
+    initPortfolio(C);
+    initClock((Array.isArray(C.firms) && C.firms.length) ? C.firms : (D.firms || []));
+  }
+
+  /* ---------------- 지역 페이지 움직임: 화면에 들어올 때 한 번 ---------------- */
+  (function(){
+    if(!('IntersectionObserver' in window) || !document.body.classList.contains('rg')) return;
+    var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var root = document.documentElement; root.classList.add('js-rv');
+    var io = new IntersectionObserver(function(en){ en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('is-in'); if(e.target.__onIn){ var f = e.target.__onIn; e.target.__onIn = null; f(); } io.unobserve(e.target); } }); }, {rootMargin:'0px 0px -10% 0px', threshold:.12});
+    var watch = function(el, i, fn){ if(!el) return; el.classList.add('rv'); if(i != null) el.style.setProperty('--i', i); if(fn) el.__onIn = fn; io.observe(el); };
+    var watchOnly = function(el, fn){ if(!el) return; if(fn) el.__onIn = fn; io.observe(el); };
+    // 섹션 제목·소개, 카드 묶음
+    document.querySelectorAll('main > section:not(.hero) .wrap > .kicker, main > section:not(.hero) .wrap > .h2, main > section:not(.hero) .wrap > .p').forEach(function(el){ watch(el, 0); });
+    ['.mk-stat','.mk-card','.diag-item','.cards:not([data-sub=plan-cards]) .card','.flow li','.calc','.zt','.faq-item','.mk-map','.why-box','.apply-wrap','.tm-facts > div'].forEach(function(sel){
+      document.querySelectorAll(sel).forEach(function(el, i){ watch(el, i % 6); });
+    });
+    // 숫자 카드: 0부터 올라감
+    function countUp(el){
+      var raw = el.textContent.trim(), m = raw.match(/^([\d,]+)(\.\d+)?$/); if(!m || still) return;
+      var dec = m[2] ? m[2].length - 1 : 0, to = parseFloat(raw.replace(/,/g, '')), t0 = null, dur = 1200;
+      var fmt = function(v){ return v.toLocaleString('ko-KR', {minimumFractionDigits:dec, maximumFractionDigits:dec}); };
+      el.textContent = fmt(0);
+      requestAnimationFrame(function step(t){ if(t0 === null) t0 = t; var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(to * e); if(k < 1) requestAnimationFrame(step); else el.textContent = raw; });
+    }
+    document.querySelectorAll('.mk-stat').forEach(function(card){ var n = card.querySelector('.mk-n'); if(n){ var orig = n.textContent; card.__onIn = function(){ n.textContent = orig; countUp(n); }; } });
+    var ws = document.querySelector('.why-stat b'); if(ws) watchOnly(ws.parentNode, function(){ countUp(ws); });
+    // 막대
+    document.querySelectorAll('.mk-fill').forEach(function(f){ f.style.setProperty('--w', f.style.width || '0%'); });
+    document.querySelectorAll('.mk-bar').forEach(function(b){ watchOnly(b); });
+    // 진단 단계
+    document.querySelectorAll('.diag-meter').forEach(function(mt){ mt.querySelectorAll('i').forEach(function(i, k){ i.style.setProperty('--k', k); }); });
+    document.querySelectorAll('.diag').forEach(function(d){ watchOnly(d); });
+    // 사진
+    document.querySelectorAll('.band, .flow-photo, .apply-photo').forEach(function(p){ watchOnly(p); });
+    // 휴대폰: 검색어 입력 → 결과 등장 (화면에 보이는 동안 반복)
+    document.querySelectorAll('.mock').forEach(function(mock){
+      var q = mock.querySelector('.mock-search span');
+      mock.querySelectorAll('.mock-list li').forEach(function(li, i){ li.style.setProperty('--i', i); var b = li.querySelector('.mock-badge'); if(b) b.style.setProperty('--i', i); });
+      var full = q ? q.textContent : '';
+      if(still || !q){ mock.classList.add('is-done'); return; }
+      var chars = Array.from(full), timer = null, visible = false, running = false;
+      function play(){
+        if(running) return; running = true;
+        clearTimeout(timer); mock.classList.remove('is-done'); q.textContent = ''; q.classList.add('typing');
+        var n = 0;
+        timer = setTimeout(function type(){
+          n++; q.textContent = chars.slice(0, n).join('');
+          if(n < chars.length) timer = setTimeout(type, 160);
+          else timer = setTimeout(function(){
+            q.classList.remove('typing'); mock.classList.add('is-done');
+            timer = setTimeout(function(){ running = false; if(visible && !document.hidden) play(); }, 7000);   // 결과를 7초 보여준 뒤 다시
+          }, 450);
+        }, 500);
+      }
+      q.textContent = ''; q.classList.add('typing');
+      new IntersectionObserver(function(en){ visible = en[0].isIntersecting; if(visible) play(); }, {threshold:.45}).observe(mock);
+    });
+    // 상품 카드: 금액이 0부터 올라감
+    document.querySelectorAll('[data-sub=plan-cards]').forEach(function(box){
+      watchOnly(box, function(){
+        if(still) return;
+        box.querySelectorAll('.num').forEach(function(n, i){
+          var raw = n.textContent.trim(), m = raw.match(/^([\d,]+)(\D*)$/); if(!m) return;
+          var to = +m[1].replace(/,/g, ''), unit = m[2], t0 = null, dur = 1100, delay = 250 + i * 150;
+          n.textContent = '0' + unit;
+          setTimeout(function(){ requestAnimationFrame(function step(t){ if(t0 === null) t0 = t; var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+            n.textContent = Math.round(to * e / 1000 * (k < 1 ? 1 : 1)) * 1000 > to ? raw : (Math.round(to * e / 1000) * 1000).toLocaleString('ko-KR') + unit; if(k < 1) requestAnimationFrame(step); else n.textContent = raw; }); }, delay);
+        });
+      });
+    });
+    // 진행 방식: 1→4단계가 차례로 켜지며 반복 (보이는 동안만)
+    document.querySelectorAll('.flow').forEach(function(flow){
+      if(still) return;
+      var items = [].slice.call(flow.querySelectorAll('li')); if(items.length < 2) return;
+      var idx = -1, t = null, on = false;
+      function step(){
+        idx = (idx + 1) % (items.length + 1);
+        items.forEach(function(li, k){ li.classList.toggle('is-active', k === idx); li.classList.toggle('is-done', k < idx); });
+        t = setTimeout(function(){ if(on && !document.hidden) step(); else t = null; }, idx === items.length ? 900 : 1600);
+      }
+      new IntersectionObserver(function(en){ on = en[0].isIntersecting; if(on){ flow.classList.add('is-cycling'); if(!t){ setTimeout(step, 700); } } }, {threshold:.35}).observe(flow);
+    });
+    // 빠르게 넘겨서 지나친 요소도 빠짐없이 보이도록: 스크롤이 멈추면 화면 위쪽에 있는 것은 모두 표시
+    var sweepT; function sweep(){ var lim = window.innerHeight; document.querySelectorAll('.rv:not(.is-in), [data-sub=plan-cards]:not(.is-in), .mk-bar:not(.is-in), .diag:not(.is-in), .band:not(.is-in), .flow-photo:not(.is-in), .apply-photo:not(.is-in), .why-box:not(.is-in)').forEach(function(el){ if(el.getBoundingClientRect().top < lim){ el.classList.add('is-in'); if(el.__onIn){ var f = el.__onIn; el.__onIn = null; f(); } io.unobserve(el); } }); }
+    window.addEventListener('scroll', function(){ clearTimeout(sweepT); sweepT = setTimeout(sweep, 180); }, {passive:true});
+  })();
+
   var ctl = ('AbortController' in window) ? new AbortController() : null;
   var t = setTimeout(function(){ ctl && ctl.abort(); }, 4000);
   fetch('/api/content', {cache:'no-store', signal: ctl ? ctl.signal : undefined})
     .then(function(r){ clearTimeout(t); return r.ok ? r.json() : null; })
-    .then(function(C){ if(C && typeof C === 'object' && Object.keys(C).length) apply(C); })
-    .catch(function(){});
+    .then(function(C){ var ok = C && typeof C === 'object' && Object.keys(C).length; if(ok) apply(C); initShared(ok ? C : {}); if(ok) applySharedTexts(C); })
+    .catch(function(){ initShared({}); });
+  setTimeout(function(){ initShared({}); }, 1500);   // 응답이 늦으면 기본값으로 먼저 시작
 })();
