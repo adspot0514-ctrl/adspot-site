@@ -627,3 +627,30 @@ main>section[id]{scroll-margin-top:72px}
 .js-rv .flow-photo.is-in p{opacity:1;transform:none}
 @media (max-width:767px){.flow li:not(:last-child)::after{left:32px;top:54px;height:calc(100% - 54px + 24px)}.flow.is-cycling li.is-active{transform:translateX(3px)}}
 @media (prefers-reduced-motion:reduce){.js-rv .flow-photo.is-in img{animation:none}.js-rv .flow-photo p{opacity:1;transform:none}}
+/* ---------- 변호사마케팅 칼럼 ---------- */
+.art-head{padding:clamp(48px,7vw,88px) 0 0}
+.art-wrap{max-width:760px}
+.art-head h1{margin:0;font-size:clamp(28px,4vw,42px);line-height:1.3;font-weight:800;letter-spacing:-.035em}
+.art-meta{margin:14px 0 0;font-size:14px;color:var(--muted)}
+.art-body{padding:28px 0 clamp(56px,7vw,88px);font-size:17px;line-height:1.85;color:var(--ink-2)}
+.art-lead{font-size:clamp(17px,1.8vw,19px);color:var(--ink);font-weight:500;padding:0 0 24px;border-bottom:1px solid var(--line);margin:0 0 24px}
+.art-body h2{margin:44px 0 12px;font-size:clamp(21px,2.4vw,25px);line-height:1.4;color:var(--ink);letter-spacing:-.025em;scroll-margin-top:80px}
+.art-body p{margin:0 0 16px}
+.art-body ul{margin:0 0 18px;padding-left:20px}.art-body li{margin:0 0 8px}
+.art-body b{color:var(--ink)}
+.art-body .tbl{margin:8px 0 18px}.art-body .tbl table{font-size:15px}
+.art-tip{background:#f4f5f7;border-left:3px solid #d9772f;border-radius:0 12px 12px 0;padding:14px 18px;font-size:15.5px;color:var(--ink)}
+.art-toc{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin:0 0 8px}
+.art-toc b{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
+.art-toc ol{margin:0;padding-left:20px;font-size:15.5px}.art-toc a{color:var(--ink);text-decoration:none}.art-toc a:hover{color:#d9772f}
+.art-links{margin-top:40px;padding:20px 22px;border:1px solid var(--line);border-radius:16px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.art-links b{width:100%;font-size:14px;color:var(--muted)}
+.art-links a{font-weight:700;color:var(--ink);text-decoration:underline;text-decoration-color:rgba(217,119,47,.5);text-underline-offset:3px}
+.ins-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.ins-card{display:flex;flex-direction:column;gap:8px;padding:22px;border:1px solid var(--line);border-radius:18px;background:#fff;color:inherit;text-decoration:none;transition:transform .2s,border-color .2s}
+.ins-card:hover{transform:translateY(-3px);border-color:#f2c9a8}
+.ins-card h3{margin:0;font-size:19px;line-height:1.4;letter-spacing:-.02em}
+.ins-card p{margin:0;font-size:14.5px;line-height:1.65;color:var(--muted);flex:1}
+.ins-meta{font-size:12.5px;font-weight:700;color:#d9772f}
+.ins-more{font-size:14px;font-weight:800;color:var(--ink)}
+@media (max-width:640px){.art-body{font-size:16px}.ins-list{grid-template-columns:1fr}}

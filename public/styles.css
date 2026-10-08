@@ -1573,3 +1573,7 @@ video::-webkit-media-controls-panel{display:none !important}
 .areas-group a:hover{border-color:var(--gold);color:var(--gold-deep)}
 @media (max-width:1024px){.areas-inner{grid-template-columns:1fr}}
 @media (max-width:767px){.areas{padding:64px 0}.areas-group a{height:38px;padding:0 14px;font-size:14.5px}}
+
+/* H1 안에 들어간 윗줄 문구: 기존 모양 그대로 */
+.hero-title .hero-kicker{letter-spacing:normal;line-height:1.5}
+.hero-title>.hero-kicker{display:flex}
