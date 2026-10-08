@@ -46,8 +46,15 @@ var __adspotStart = function(C){
       // 이 방문(세션)이 처음 들어온 채널을 기억 → 상담 신청 때 함께 저장
       try{ if(!sessionStorage.getItem('adspot-entry') && s !== '사이트 내 이동') sessionStorage.setItem('adspot-entry', s); }catch(e){}
       var r = (q.get('r') || (saved && saved.region) || '').toLowerCase().slice(0, 20);
-      var k = q.get('n_keyword') || q.get('n_query') || q.get('utm_term') || (saved && saved.kw) || '';
-      if(paid || q.get('utm_source')){ try{ sessionStorage.setItem('adspot-src', JSON.stringify({region: r, kw: k, src: s})); }catch(e){} }
+      // 검색어: 광고는 실제 검색어(n_query) → 등록 키워드(n_keyword) 순, 자연 검색은 검색엔진 주소의 검색어
+      var refKw = (function(){ try{ if(!ext) return ''; var u = new URL(document.referrer), h = u.hostname, P = u.searchParams;
+        if(/(^|\.)naver\.com$/.test(h)) return P.get('query') || P.get('oquery') || '';
+        if(/(^|\.)(daum\.net|bing\.com|google\.[a-z.]+)$/.test(h)) return P.get('q') || '';
+        if(/(^|\.)zum\.com$/.test(h)) return P.get('query') || '';
+        if(/(^|\.)yahoo\./.test(h)) return P.get('p') || '';
+        return ''; }catch(e){ return ''; } })();
+      var k = (q.get('n_query') || q.get('n_keyword') || q.get('utm_term') || refKw || (saved && saved.kw) || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+      if(paid || q.get('utm_source') || (refKw && ext)){ try{ sessionStorage.setItem('adspot-src', JSON.stringify({region: r, kw: k, src: s})); }catch(e){} }
       var sid = sessionStorage.getItem('adspot-sid');
       if(!sid){ sid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-5); sessionStorage.setItem('adspot-sid', sid); }
       window.__adspotSid = sid;

@@ -149,6 +149,26 @@ async function stats(env, days) {
     l.sessions++; if (x.pages === 1 && !Object.keys(x.acts).length) l.bounce++;
     l.stay += x.stay; if (x.acts["전화 클릭"] || x.acts["카톡 클릭"]) l.contact++; if (x.acts["상담 신청"]) l.inquiries++; if (isPaid(x.src)) l.paid++;
   }
+  // 검색어별: 방문(세션) · 광고/자연 · 연락 · 상담 신청 · 주로 들어온 페이지
+  const KW = {};
+  for (const x of sessions) { if (!x.kw) continue;
+    const k = (KW[x.kw] ||= { name: x.kw, sessions: 0, paid: 0, organic: 0, contact: 0, inquiries: 0, src: {}, land: {} });
+    k.sessions++; if (isPaid(x.src)) k.paid++; else k.organic++;
+    if (x.acts["전화 클릭"] || x.acts["카톡 클릭"]) k.contact++; if (x.acts["상담 신청"]) k.inquiries++;
+    k.src[x.src || "확인 불가"] = (k.src[x.src || "확인 불가"] || 0) + 1; k.land[x.landing] = (k.land[x.landing] || 0) + 1; }
+  const top = (o) => Object.entries(o).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  const searchTerms = Object.values(KW).map((k) => ({ name: k.name, sessions: k.sessions, paid: k.paid, organic: k.organic, contact: k.contact, inquiries: k.inquiries, src: top(k.src), landing: top(k.land) }))
+    .sort((a, b) => b.sessions - a.sessions || b.inquiries - a.inquiries).slice(0, 50);
+  // 이전 같은 기간과 비교
+  const prevFrom = kstDay(Date.now() - (days * 2 - 1) * 86400000);
+  const D2 = await db(env);
+  const pt = (await D2.prepare("SELECT COUNT(*) AS views, COUNT(DISTINCT v) AS visitors FROM events WHERE day >= ? AND day < ?").bind(prevFrom, from).first()) || {};
+  const pq = (await D2.prepare("SELECT COUNT(*) AS n FROM inquiries WHERE day >= ? AND day < ?").bind(prevFrom, from).first()) || {};
+  const prevTotals = { views: pt.views || 0, visitors: pt.visitors || 0, inquiries: pq.n || 0 };
+  // 요일·시간대별 방문 시작 (한국 시간, 2시간 단위)
+  const heat = Array.from({ length: 7 }, () => Array(12).fill(0));
+  for (const x of sessions) { const k = new Date(x.start + 9 * 3600000); heat[k.getUTCDay()][Math.floor(k.getUTCHours() / 2)]++; }
+  const contactSessions = sessions.filter((x) => x.acts["전화 클릭"] || x.acts["카톡 클릭"]).length;
   const landings = Object.values(L).map((l) => ({ ...l, avgStay: l.sessions ? Math.round(l.stay / l.sessions) : 0 })).sort((a, b) => b.sessions - a.sessions);
   const journeys = sessions.sort((a, b) => b.start - a.start).slice(0, 25).map((x) => ({
     start: x.start, src: x.src, group: groupOf(x.src), kw: x.kw, dev: x.dev, landing: x.landing, pages: x.pages, stay: x.stay,
@@ -161,7 +181,7 @@ async function stats(env, days) {
     daily: dayList.map((day) => ({ day, views: (dmap[day] && dmap[day].views) || 0, visitors: (dmap[day] && dmap[day].visitors) || 0,
       inquiries: inq.filter((i) => kstDay(new Date(i.createdAt).getTime()) === day).length })),
     pages: Object.values(pmap).sort((a, b) => b.views - a.views),
-    sources: src, regions: region, keywords: kw, devices: dev };
+    sources: src, regions: region, keywords: kw, devices: dev, searchTerms, prevTotals, heat, contactSessions };
 }
 
 /* 백업 불러오기: 상담·홈페이지 수정 내용 + (선택) 예전 사이트의 이미지·영상 복사 */

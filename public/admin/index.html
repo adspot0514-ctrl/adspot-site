@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>애드스팟 관리자</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="admin.css?v=20261008">
+<link rel="stylesheet" href="admin.css?v=20261009">
 </head>
 <body>
   <!-- 로그인 -->
@@ -111,27 +111,37 @@
       </div>
       <p class="hint" id="st-period" style="margin:-6px 0 16px"></p>
       <div class="st-cards" id="st-cards"></div>
-      <section class="st-box"><h3>광고 vs 자연 유입</h3><div class="st-ch" id="st-ch"></div>
-        <p class="hint" style="margin:10px 0 0">광고 = 네이버 파워링크(자동 추적 URL·지역 광고 주소·?ch=pl), 자연 유입 = 검색·블로그·카페·다른 사이트, 직접·기타 = 주소 직접 입력·즐겨찾기. 상담 신청은 그 방문자가 처음 들어온 채널 기준입니다.</p></section>
-      <section class="st-box"><h3>일별 방문</h3><div class="st-chart" id="st-chart"></div></section>
+      <p class="hint st-cmp" id="st-cmp"></p>
+      <section class="st-box"><div class="st-head"><h3>일별 방문 추이</h3><div class="st-legend"><span class="lg v">방문 수</span><span class="lg u">방문자</span><span class="lg q">상담 신청</span></div></div><div class="st-line" id="st-chart"></div></section>
+      <div class="st-grid">
+        <section class="st-box"><h3>유입 채널</h3><div class="st-donutwrap" id="st-ch"></div>
+          <p class="hint" style="margin:12px 0 0">광고 = 네이버 파워링크(자동 추적 URL·지역 광고 주소·?ch=pl), 자연 유입 = 검색·블로그·카페·다른 사이트, 직접·기타 = 주소 직접 입력·즐겨찾기. 상담 신청은 그 방문자가 처음 들어온 채널 기준입니다.</p></section>
+        <section class="st-box"><h3>상담까지 이어지는 흐름</h3><div id="st-funnel"></div></section>
+      </div>
+      <section class="st-box"><h3>요일·시간대별 방문</h3><div class="st-heatwrap" id="st-heat"></div>
+        <p class="hint" style="margin:10px 0 0">방문이 시작된 시각(한국 시간) 기준입니다. 색이 진한 시간대에 광고 입찰을 높이면 같은 예산으로 효율이 좋아집니다.</p></section>
+      <section class="st-box"><h3>유입 검색어 (어떤 검색어로 들어왔는지)</h3><div class="st-tbl" id="st-terms"></div>
+        <p class="hint" style="margin:10px 0 0">광고 = 네이버 파워링크에서 실제로 검색한 말(자동 추적 URL이 켜져 있어야 수집), 자연 = 네이버·다음·빙 검색 결과에서 들어온 검색어. 구글과 일부 네이버 검색은 검색어를 넘겨주지 않아 잡히지 않으니, 자연 검색어 전체는 구글 서치 콘솔·네이버 서치어드바이저에서 함께 확인하세요.</p></section>
       <section class="st-box"><h3>첫 페이지 (방문자가 처음 들어온 페이지)</h3><div class="st-tbl" id="st-land"></div>
         <p class="hint" style="margin:10px 0 0">이탈 = 그 페이지 하나만 보고 아무 행동 없이 떠난 방문. 연락 = 전화·카톡 버튼 클릭.</p></section>
-      <section class="st-box"><h3>방문자 행동</h3><div id="st-act"></div></section>
-      <section class="st-box"><h3>최근 방문 흐름 (최근 25명)</h3><div id="st-journey"></div></section>
-      <section class="st-box"><h3>페이지별</h3><div class="st-tbl" id="st-pages"></div></section>
       <div class="st-grid">
         <section class="st-box"><h3>유입 경로 (상세)</h3><div id="st-src"></div></section>
-        <section class="st-box"><h3>광고 지역</h3><div id="st-region"></div></section>
-        <section class="st-box"><h3>검색 키워드 (광고)</h3><div id="st-kw"></div></section>
-        <section class="st-box"><h3>기기</h3><div id="st-dev"></div></section>
+        <section class="st-box"><h3>방문자 행동</h3><div id="st-act"></div></section>
       </div>
+      <div class="st-grid st-grid3">
+        <section class="st-box"><h3>기기</h3><div id="st-dev"></div></section>
+        <section class="st-box"><h3>광고 지역</h3><div id="st-region"></div></section>
+        <section class="st-box"><h3>검색어 (페이지 열람 수)</h3><div id="st-kw"></div></section>
+      </div>
+      <section class="st-box"><h3>최근 방문 흐름 (최근 25명)</h3><div id="st-journey"></div></section>
+      <section class="st-box"><h3>페이지별</h3><div class="st-tbl" id="st-pages"></div></section>
       <p class="hint" style="margin-top:14px">방문 수는 페이지를 연 횟수, 방문자는 서로 다른 브라우저 수입니다. 검색 로봇과 관리자 페이지는 제외됩니다.</p>
     </main>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="../content-defaults.js?v=20261008"></script>
-<script src="../regions-defaults.js?v=20261008"></script>
-<script src="admin.js?v=20261008"></script>
+<script src="../content-defaults.js?v=20261009"></script>
+<script src="../regions-defaults.js?v=20261009"></script>
+<script src="admin.js?v=20261009"></script>
 </body>
 </html>

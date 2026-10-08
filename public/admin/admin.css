@@ -221,3 +221,98 @@ label.btn{display:inline-flex;align-items:center;cursor:pointer}
 .jr-s small{margin-left:4px;color:var(--muted);font-size:11px}
 .jr-s .arr{font-style:normal;color:#b9b3a8}
 #st-act .st-bars li{grid-template-columns:150px 1fr 110px}
+/* ---------- 통계 시각화 ---------- */
+.st-cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+.st-card{position:relative;overflow:hidden;padding:18px 20px 16px;min-height:132px}
+.st-card b{font-size:30px}
+.st-card small{font-size:12.5px;color:var(--muted);font-weight:600}
+.st-card .spark{position:absolute;right:14px;bottom:14px;width:45%;height:38px}
+.st-card.hot{border-top:3px solid #d9772f}
+.st-card.win{border-top:3px solid #2f8f5b}
+.st-card.win b{color:#2f8f5b}
+.st-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.st-head h3{margin:0}
+.st-legend{display:flex;gap:14px;font-size:12.5px;color:var(--muted);font-weight:700}
+.st-legend .lg::before{content:"";display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;background:#d9772f}
+.st-legend .lg.u::before{background:repeating-linear-gradient(90deg,#16191e 0 5px,transparent 5px 8px)}
+.st-legend .lg.q::before{width:10px;height:10px;border-radius:50%;background:#2f8f5b}
+.st-line{overflow-x:auto}
+.st-line .lc{display:block;width:100%;min-width:560px;height:auto}
+.st-line .ax{font-size:11px;fill:#8a909c;font-weight:600}
+.st-line .qn{font-size:11px;fill:#fff;font-weight:800}
+.st-line .pt:hover circle:first-of-type{r:5}
+.st-donutwrap{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center}
+.st-donutwrap .donut{width:150px;height:150px}
+.st-donutwrap.sm{grid-template-columns:120px 1fr}.st-donutwrap.sm .donut{width:120px;height:120px}
+.donut .dn{font-size:22px;font-weight:900;fill:#16191e}
+.donut .ds{font-size:11px;font-weight:700;fill:#8a909c}
+.st-chlist{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.st-chlist li{display:grid;grid-template-columns:12px 1fr auto;gap:2px 10px;align-items:center}
+.st-chlist li i{width:12px;height:12px;border-radius:4px}
+.st-chlist li b{font-size:14px}
+.st-chlist li span{font-weight:900;font-size:15px}
+.st-chlist li em{grid-column:2/-1;font-style:normal;font-size:12.5px;color:var(--muted)}
+.funnel{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.funnel li{display:grid;grid-template-columns:118px 1fr 84px;gap:10px;align-items:center;font-size:13.5px}
+.funnel .fl{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.funnel .fb{height:26px;background:#f4f5f7;border-radius:8px;overflow:hidden}
+.funnel .fb i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,#16191e,#3b4250)}
+.funnel li.last .fb i{background:linear-gradient(90deg,#2f8f5b,#45b07a)}
+.funnel .fn{text-align:right;font-weight:900}
+.funnel .fn small{display:block;font-size:11.5px;color:var(--muted);font-weight:700}
+.st-tbl td.bar{white-space:nowrap}
+.st-tbl td.bar span{display:inline-flex;vertical-align:middle;width:90px;height:8px;margin-right:8px;background:#f4f5f7;border-radius:99px;overflow:hidden}
+.st-tbl td.bar span i{display:block;height:100%;background:#d9772f}
+.st-tbl td.bar span i.org{background:#2f8f5b}
+.pill{display:inline-block;font-size:12px;font-weight:800;padding:2px 8px;border-radius:99px}
+.pill.good{background:#e6f4ec;color:#2f8f5b}.pill.mid{background:#fdf1e7;color:#b25a1c}.pill.bad{background:#fdecec;color:#c0392b}
+.st-grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.st-grid{margin-bottom:14px}
+@media (max-width:1100px){.st-grid3{grid-template-columns:1fr 1fr}}
+@media (max-width:860px){
+  .st-cards{grid-template-columns:1fr 1fr}
+  .st-card b{font-size:24px}.st-card .spark{width:40%}
+  .st-grid3{grid-template-columns:1fr}
+  .st-donutwrap{grid-template-columns:110px 1fr;gap:12px}.st-donutwrap .donut,.st-donutwrap.sm .donut{width:110px;height:110px}
+  .funnel li{grid-template-columns:96px 1fr 64px}
+}
+
+/* ---------- 통계 보완: 비교·히트맵·모바일 ---------- */
+.st-card span{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.st-card .dl{font-style:normal;font-size:11.5px;font-weight:800;padding:1px 7px;border-radius:99px;background:#f4f5f7;color:#5b616e}
+.st-card .dl.up{background:#e6f4ec;color:#2f8f5b}.st-card .dl.down{background:#fdecec;color:#c0392b}
+.st-cmp{margin:-4px 0 14px;font-size:12.5px}
+.st-tbl td.bar span u{display:flex;height:100%;text-decoration:none}
+.st-tbl td.bar span u i{display:block;height:100%}
+.st-heatwrap{overflow-x:auto}
+.hm{display:grid;gap:4px;min-width:560px}
+.hm-row{display:grid;grid-template-columns:28px repeat(12,minmax(0,1fr));gap:4px;align-items:center}
+.hm-row b{font-size:12.5px;color:var(--muted);text-align:center}
+.hm-row span{height:30px;border-radius:6px;background:#f4f5f7;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;color:#7a5236}
+.hm-h span{height:auto;background:none;font-size:11px;color:var(--muted);font-weight:700}
+.jr.fold > li:nth-child(n+9){display:none}
+.st-more{margin-top:12px;width:100%}
+@media (max-width:860px){
+  .tabs{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{flex:0 0 auto;white-space:nowrap;padding:0 12px}
+  .st-card{min-height:0;padding:14px 14px 12px}
+  .st-card .spark{position:static;display:block;width:100%;height:30px;margin-top:6px}
+  .st-card span{font-size:12.5px}
+  .st-box{padding:16px 14px}
+  .st-line .lc{min-width:0}
+  .hm{min-width:0;gap:3px}
+  .hm-row{grid-template-columns:22px repeat(12,minmax(0,1fr));gap:3px}
+  .hm-row span{height:24px;font-size:10px;border-radius:4px}
+  .hm-h span{font-size:9px}
+  /* 표는 휴대폰에서 카드처럼 */
+  .st-tbl table{min-width:0;font-size:13.5px}
+  .st-tbl thead{display:none}
+  .st-tbl tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .st-tbl tbody th{grid-column:1/-1;padding:0 0 4px;border:0;text-align:left;font-size:14.5px}
+  .st-tbl tbody td{padding:0;border:0;text-align:left;display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .st-tbl tbody td::before{content:attr(data-l);color:var(--muted);font-size:12px;font-weight:700}
+  .st-tbl td.bar{grid-column:1/-1}
+  .st-tbl td.bar span{flex:1;width:auto;margin:0 8px}
+  .st-tbl td small{display:none}
+}

@@ -533,22 +533,88 @@
     return '<ul class="st-bars">' + list.map(function(x){ var label = (map && map[x.name]) || x.name;
       return '<li><span class="l">' + esc(label) + '</span><span class="b"><i style="width:' + Math.max(3, x.count / max * 100) + '%"></i></span><span class="n">' + num(x.count) + '</span></li>'; }).join('') + '</ul>';
   }
+  /* ---------- 통계 시각화 도우미 (외부 라이브러리 없이 SVG) ---------- */
+  var VC = {ink:'#16191e', gold:'#d9772f', goldL:'#f59350', green:'#2f8f5b', grey:'#b9bec8', line:'#e8eaee'};
+  function spark(vals, color){
+    var w = 120, h = 34, n = vals.length, max = Math.max.apply(null, vals.concat([1]));
+    if(n < 2) return '';
+    var pts = vals.map(function(v, i){ return [(i / (n - 1) * w).toFixed(1), (h - 3 - v / max * (h - 6)).toFixed(1)]; });
+    var d = 'M' + pts.map(function(p){ return p.join(','); }).join(' L');
+    return '<svg class="spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true"><path d="' + d + ' L' + w + ',' + h + ' L0,' + h + ' Z" fill="' + color + '" opacity=".12"/><path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+  }
+  function lineChart(daily, cw){
+    var W = Math.max(320, Math.min(1100, Math.round(cw || 860))), H = W < 520 ? 220 : 260, L = 34, R = 12, T = 16, B = 34, n = daily.length;
+    var max = Math.max.apply(null, daily.map(function(d){ return d.views; }).concat([4]));
+    var step = Math.pow(10, Math.floor(Math.log10(max))); var top = Math.ceil(max / step) * step; if(top / step > 6) step *= 2; top = Math.ceil(max / step) * step;
+    var x = function(i){ return n > 1 ? L + i / (n - 1) * (W - L - R) : (W - L - R) / 2 + L; }, y = function(v){ return T + (1 - v / top) * (H - T - B); };
+    var grid = ''; for(var g = 0; g <= top; g += step){ grid += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="' + VC.line + '"/><text x="' + (L - 8) + '" y="' + (y(g) + 4) + '" text-anchor="end" class="ax">' + num(g) + '</text>'; }
+    var path = function(k){ return daily.map(function(d, i){ return (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(d[k]).toFixed(1); }).join(' '); };
+    var area = path('views') + ' L' + x(n - 1) + ',' + y(0) + ' L' + x(0) + ',' + y(0) + ' Z';
+    var every = Math.ceil(n / (W < 520 ? 5 : 10));
+    var labels = daily.map(function(d, i){ return (i % every === 0 || i === n - 1) ? '<text x="' + x(i) + '" y="' + (H - 10) + '" text-anchor="' + (n > 1 && i === n - 1 ? 'end' : n > 1 && i === 0 ? 'start' : 'middle') + '" class="ax">' + d.day.slice(5).replace('-', '.') + '</text>' : ''; }).join('');
+    var dots = daily.map(function(d, i){
+      var tip = d.day + ' · 방문 ' + num(d.views) + ' · 방문자 ' + num(d.visitors) + ' · 상담 ' + num(d.inquiries);
+      return '<g class="pt"><title>' + tip + '</title><rect x="' + (x(i) - (W - L - R) / Math.max(1, n - 1) / 2) + '" y="' + T + '" width="' + ((W - L - R) / Math.max(1, n - 1)) + '" height="' + (H - T - B) + '" fill="transparent"/>' +
+        '<circle cx="' + x(i) + '" cy="' + y(d.views) + '" r="3.5" fill="#fff" stroke="' + VC.gold + '" stroke-width="2"/>' +
+        (d.inquiries ? '<g><circle cx="' + x(i) + '" cy="' + (H - B - 12) + '" r="10" fill="' + VC.green + '"/><text x="' + x(i) + '" y="' + (H - B - 8) + '" text-anchor="middle" class="qn">' + d.inquiries + '</text></g>' : '') + '</g>';
+    }).join('');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="lc" role="img" aria-label="일별 방문 추이"><defs><linearGradient id="lcg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="' + VC.goldL + '" stop-opacity=".35"/><stop offset="1" stop-color="' + VC.goldL + '" stop-opacity="0"/></linearGradient></defs>' +
+      grid + '<path d="' + area + '" fill="url(#lcg)"/><path d="' + path('views') + '" fill="none" stroke="' + VC.gold + '" stroke-width="2.5" stroke-linejoin="round"/>' +
+      '<path d="' + path('visitors') + '" fill="none" stroke="' + VC.ink + '" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>' + labels + dots + '</svg>';
+  }
+  function donut(parts, center, sub){
+    var total = parts.reduce(function(s, p){ return s + p.v; }, 0), r = 52, c = 2 * Math.PI * r, off = 0;
+    var arcs = total ? parts.map(function(p){ var len = p.v / total * c; var s = '<circle cx="70" cy="70" r="' + r + '" fill="none" stroke="' + p.c + '" stroke-width="20" stroke-dasharray="' + len.toFixed(2) + ' ' + (c - len).toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 70 70)"><title>' + esc(p.n) + ' ' + num(p.v) + '</title></circle>'; off += len; return s; }).join('') : '<circle cx="70" cy="70" r="' + r + '" fill="none" stroke="' + VC.line + '" stroke-width="20"/>';
+    return '<svg viewBox="0 0 140 140" class="donut" role="img"><circle cx="70" cy="70" r="' + r + '" fill="none" stroke="' + VC.line + '" stroke-width="20"/>' + arcs + '<text x="70" y="68" text-anchor="middle" class="dn">' + center + '</text><text x="70" y="88" text-anchor="middle" class="ds">' + sub + '</text></svg>';
+  }
+  var stLast = null;
+  function drawLine(){ var box = $('#st-chart'); if(!box || !stLast) return; box.innerHTML = lineChart(stLast, box.clientWidth); }
+  var stRz; window.addEventListener('resize', function(){ clearTimeout(stRz); stRz = setTimeout(drawLine, 150); });
+  function labelTables(){
+    $$('#tab-stats .st-tbl table').forEach(function(tb){
+      var heads = $$('thead th', tb).map(function(th){ return th.textContent; });
+      $$('tbody tr', tb).forEach(function(tr){ Array.prototype.forEach.call(tr.children, function(c, i){ if(i) c.setAttribute('data-l', heads[i] || ''); }); });
+    });
+  }
   function loadStats(){
     $('#st-cards').innerHTML = '<p class="empty-s">불러오는 중…</p>';
     return api('GET', '/admin/stats?days=' + stDays).then(function(j){
       $('#st-period').textContent = (j.from === j.to ? j.to : j.from + ' ~ ' + j.to) + ' (한국 시간 기준)';
       var t = j.totals;
-      $('#st-cards').innerHTML = [['방문 수', num(t.views)], ['방문자', num(t.visitors)], ['상담 신청', num(t.inquiries)], ['전환율', pct(t.inquiries, t.visitors)]]
-        .map(function(c){ return '<div class="st-card"><span>' + c[0] + '</span><b>' + c[1] + '</b></div>'; }).join('');
-      var max = Math.max.apply(null, j.daily.map(function(d){ return d.views; }).concat([1]));
-      $('#st-chart').innerHTML = j.daily.map(function(d){
-        return '<div class="col" title="' + d.day + ' · 방문 ' + d.views + ' · 방문자 ' + d.visitors + ' · 신청 ' + d.inquiries + '"><span class="v">' + (d.views || '') + '</span><i style="height:' + (d.views / max * 100) + '%"></i>' + (d.inquiries ? '<em>' + d.inquiries + '건</em>' : '') + '<small>' + d.day.slice(5).replace('-', '.') + '</small></div>'; }).join('');
+      var dl = j.daily || [], days = dl.length || 1;
+      var conv = dl.map(function(d){ return d.visitors ? d.inquiries / d.visitors * 100 : 0; });
+      var contact = j.contactSessions != null ? j.contactSessions : (j.behavior || []).filter(function(b){ return /전화|카톡/.test(b.name); }).reduce(function(n, b){ return n + b.sessions; }, 0);
+      var P = j.prevTotals || null;
+      var delta = function(cur, prev){ if(!P) return ''; if(!prev) return cur ? '<em class="dl up">새로 발생</em>' : ''; var d = Math.round((cur - prev) / prev * 100); return '<em class="dl ' + (d > 0 ? 'up' : d < 0 ? 'down' : 'flat') + '">' + (d > 0 ? '▲ ' : d < 0 ? '▼ ' : '') + Math.abs(d) + '%</em>'; };
+      var CARDS = [
+        {k:'방문 수', v:num(t.views), d:delta(t.views, P && P.views), sub:'하루 평균 ' + num(Math.round(t.views / days)), s:spark(dl.map(function(d){ return d.views; }), VC.gold), cls:''},
+        {k:'방문자', v:num(t.visitors), d:delta(t.visitors, P && P.visitors), sub:'방문자당 ' + (t.visitors ? (Math.round(t.views / t.visitors * 10) / 10) : 0) + '페이지', s:spark(dl.map(function(d){ return d.visitors; }), VC.ink), cls:''},
+        {k:'전화·카톡 연락', v:num(contact), d:'', sub:'방문의 ' + pct(contact, j.sessionsCount || 0), s:'', cls:' hot'},
+        {k:'상담 신청', v:num(t.inquiries), d:delta(t.inquiries, P && P.inquiries), sub:'전환율 ' + pct(t.inquiries, t.visitors), s:spark(dl.map(function(d){ return d.inquiries; }), VC.green), cls:' win'}];
+      $('#st-cards').innerHTML = CARDS.map(function(c){ return '<div class="st-card' + c.cls + '"><span>' + c.k + c.d + '</span><b>' + c.v + '</b><small>' + c.sub + '</small>' + c.s + '</div>'; }).join('');
+      $('#st-cmp').textContent = P ? '▲▼ 표시는 바로 전 같은 기간(' + stDays + '일)과 비교한 변화입니다.' : '';
+      stLast = dl; drawLine();
+      // 요일·시간대
+      var HM = j.heat || null;
+      if(HM){
+        var DOW = ['월','화','수','목','금','토','일'], ord = [1,2,3,4,5,6,0], hmax = Math.max.apply(null, [].concat.apply([], HM).concat([1]));
+        var head = '<div class="hm-row hm-h"><span></span>' + HM[0].map(function(_, b){ return '<span>' + (b * 2) + '시</span>'; }).join('') + '</div>';
+        $('#st-heat').innerHTML = '<div class="hm">' + head + ord.map(function(di, r){ return '<div class="hm-row"><b>' + DOW[r] + '</b>' + HM[di].map(function(v, b){ var a = v / hmax; return '<span title="' + DOW[r] + '요일 ' + (b * 2) + '~' + (b * 2 + 2) + '시 · 방문 ' + v + '" style="background:rgba(217,119,47,' + (v ? (0.12 + a * 0.88).toFixed(2) : 0) + ')' + (a > .55 ? ';color:#fff' : '') + '">' + (v || '') + '</span>'; }).join('') + '</div>'; }).join('') + '</div>';
+      }
       $('#st-pages').innerHTML = j.pages.length ? '<table><thead><tr><th>페이지</th><th>방문 수</th><th>방문자</th><th>상담 신청</th><th>전환율</th></tr></thead><tbody>' +
         j.pages.map(function(p){ return '<tr><th><a href="' + esc(p.path) + '" target="_blank" rel="noopener">' + esc(PAGE_NAMES[p.path] || p.path) + '</a></th><td>' + num(p.views) + '</td><td>' + num(p.visitors) + '</td><td>' + num(p.inquiries) + '</td><td>' + pct(p.inquiries, p.visitors) + '</td></tr>'; }).join('') + '</tbody></table>'
         : '<p class="empty-s">아직 데이터가 없습니다.</p>';
       var CH_COLOR = {'광고':'ad', '자연 유입':'org', '직접·기타':'etc'};
-      $('#st-ch').innerHTML = (j.channels || []).map(function(c){
-        return '<div class="ch ' + CH_COLOR[c.name] + '"><b>' + c.name + '</b><dl><dt>방문 수</dt><dd>' + num(c.views) + '</dd><dt>방문자</dt><dd>' + num(c.visitors) + '</dd><dt>상담 신청</dt><dd>' + num(c.inquiries) + '</dd><dt>전환율</dt><dd>' + pct(c.inquiries, c.visitors) + '</dd></dl></div>'; }).join('');
+      var CHC = {'광고':VC.gold, '자연 유입':VC.green, '직접·기타':VC.grey}, chs = j.channels || [];
+      var vsum = chs.reduce(function(n, c){ return n + c.visitors; }, 0);
+      $('#st-ch').innerHTML = donut(chs.map(function(c){ return {n:c.name, v:c.visitors, c:CHC[c.name]}; }), num(vsum), '방문자') +
+        '<ul class="st-chlist">' + chs.map(function(c){ return '<li><i style="background:' + CHC[c.name] + '"></i><b>' + c.name + '</b><span>' + pct(c.visitors, vsum) + '</span><em>방문자 ' + num(c.visitors) + ' · 상담 ' + num(c.inquiries) + ' · 전환 ' + pct(c.inquiries, c.visitors) + '</em></li>'; }).join('') + '</ul>';
+      var B = {}; (j.behavior || []).forEach(function(b){ B[b.name] = b.sessions; });
+      var tot0 = j.sessionsCount || 0;
+      var FN = [['방문', tot0], ['절반 이상 스크롤', B['절반 이상 스크롤'] || 0], ['견적 계산기 사용', B['견적 계산기 사용'] || 0], ['전화·카톡 연락', contact], ['신청서 작성 시작', B['신청서 작성 시작'] || 0], ['상담 신청', B['상담 신청'] || 0]];
+      $('#st-funnel').innerHTML = tot0 ? '<ol class="funnel">' + FN.map(function(f, i){ var w = Math.max(4, f[1] / tot0 * 100);
+        return '<li' + (i === FN.length - 1 ? ' class="last"' : '') + '><span class="fl">' + f[0] + '</span><span class="fb"><i style="width:' + w + '%"></i></span><span class="fn">' + num(f[1]) + '<small>' + pct(f[1], tot0) + '</small></span></li>'; }).join('') + '</ol>'
+        : '<p class="empty-s">아직 데이터가 없습니다.</p>';
       var det = j.sourcesDetail || [];
       $('#st-src').innerHTML = det.length ? '<ul class="st-bars">' + det.map(function(x){ var max = det[0].count || 1;
         return '<li><span class="l"><i class="tag ' + CH_COLOR[x.group] + '">' + (x.group === '자연 유입' ? '자연' : x.group === '광고' ? '광고' : '직접') + '</i>' + esc(x.name) + '</span><span class="b"><i style="width:' + Math.max(3, x.count / max * 100) + '%"></i></span><span class="n">' + num(x.count) + (x.inquiries ? ' · 신청 ' + x.inquiries : '') + '</span></li>'; }).join('') + '</ul>' : '<p class="empty-s">아직 데이터가 없습니다.</p>';
@@ -556,8 +622,12 @@
       var sec2 = function(n){ n = +n || 0; return n >= 60 ? Math.floor(n / 60) + '분 ' + (n % 60) + '초' : n + '초'; };
       var pname = function(p){ return PAGE_NAMES[p] || p; };
       $('#st-land').innerHTML = (j.landings || []).length ? '<table><thead><tr><th>첫 페이지</th><th>방문</th><th>광고 유입</th><th>이탈률</th><th>평균 머문 시간</th><th>연락</th><th>상담 신청</th></tr></thead><tbody>' +
-        j.landings.map(function(l){ return '<tr><th>' + esc(pname(l.path)) + '</th><td>' + num(l.sessions) + '</td><td>' + num(l.paid) + '</td><td>' + pct(l.bounce, l.sessions) + '</td><td>' + sec2(l.avgStay) + '</td><td>' + num(l.contact) + '</td><td>' + num(l.inquiries) + '</td></tr>'; }).join('') + '</tbody></table>'
+        j.landings.map(function(l){ var lmax = j.landings[0].sessions || 1, br = l.sessions ? l.bounce / l.sessions : 0; return '<tr><th>' + esc(pname(l.path)) + '</th><td class="bar"><span><i style="width:' + Math.max(4, l.sessions / lmax * 100) + '%"></i></span>' + num(l.sessions) + '</td><td>' + num(l.paid) + '</td><td><b class="pill ' + (br > .6 ? 'bad' : br > .4 ? 'mid' : 'good') + '">' + pct(l.bounce, l.sessions) + '</b></td><td>' + sec2(l.avgStay) + '</td><td>' + num(l.contact) + '</td><td>' + num(l.inquiries) + '</td></tr>'; }).join('') + '</tbody></table>'
         : '<p class="empty-s">아직 데이터가 없습니다.</p>';
+      $('#st-terms').innerHTML = (j.searchTerms || []).length ? '<table><thead><tr><th>검색어</th><th>방문</th><th>경로</th><th>주로 들어온 페이지</th><th>연락</th><th>상담 신청</th></tr></thead><tbody>' +
+        j.searchTerms.map(function(k){ var kmax = j.searchTerms[0].sessions || 1; var tag = k.paid && k.organic ? '광고 ' + num(k.paid) + ' · 자연 ' + num(k.organic) : (k.paid ? '광고' : '자연 검색');
+          return '<tr><th>' + esc(k.name) + '</th><td class="bar"><span><u style="width:' + Math.max(8, k.sessions / kmax * 100) + '%"><i class="ad" style="width:' + (k.paid / k.sessions * 100) + '%"></i><i class="org" style="width:' + (k.organic / k.sessions * 100) + '%"></i></u></span>' + num(k.sessions) + '</td><td>' + esc(tag) + (k.src ? '<br><small>' + esc(k.src) + '</small>' : '') + '</td><td>' + esc(pname(k.landing)) + '</td><td>' + num(k.contact) + '</td><td>' + (k.inquiries ? '<b class="ok">' + num(k.inquiries) + '</b>' : '0') + '</td></tr>'; }).join('') + '</tbody></table>'
+        : '<p class="empty-s">아직 검색어가 잡힌 방문이 없습니다. 네이버 광고의 자동 추적 URL을 켜두면 광고 검색어부터 쌓이기 시작합니다.</p>';
       var tot = j.sessionsCount || 0;
       $('#st-act').innerHTML = tot ? '<ul class="st-bars">' + (j.behavior || []).map(function(b){
         return '<li><span class="l">' + esc(b.name) + '</span><span class="b"><i style="width:' + Math.max(2, b.sessions / tot * 100) + '%"></i></span><span class="n">' + num(b.sessions) + '명 · ' + pct(b.sessions, tot) + '</span></li>'; }).join('') + '</ul><p class="hint" style="margin:10px 0 0">전체 방문 ' + num(tot) + '건 중 해당 행동을 한 방문 수입니다.</p>'
@@ -574,8 +644,12 @@
         return '<li' + (x.converted ? ' class="conv"' : '') + '><div class="jr-h"><b>' + when + '</b><i class="tag ' + (GTAG[x.group] || 'etc') + '">' + esc(x.src || '확인 불가') + '</i>' + (x.kw ? '<span class="kw">키워드: ' + esc(x.kw) + '</span>' : '') +
           '<span class="meta">' + (x.dev === 'm' ? '모바일' : 'PC') + ' · ' + x.pages + '페이지 · ' + sec2(x.stay) + (x.converted ? ' · <b class="ok">상담 신청</b>' : x.contacted ? ' · <b class="hot">연락 시도</b>' : '') + '</span></div><div class="jr-s">' + steps + '</div></li>'; }).join('') + '</ol>'
         : '<p class="empty-s">아직 데이터가 없습니다.</p>';
+      var jr = $('#st-journey .jr'); if(jr && jr.children.length > 8){ jr.classList.add('fold'); var mb = document.createElement('button'); mb.type = 'button'; mb.className = 'btn st-more'; mb.textContent = '나머지 ' + (jr.children.length - 8) + '명 더 보기'; mb.addEventListener('click', function(){ jr.classList.remove('fold'); mb.remove(); }); jr.after(mb); }
       $('#st-kw').innerHTML = bars(j.keywords);
-      $('#st-dev').innerHTML = bars(j.devices, DEV);
+      var dv = j.devices || [], dsum = dv.reduce(function(n, d){ return n + d.count; }, 0), DVC = {m:VC.gold, pc:VC.ink};
+      labelTables();
+      $('#st-dev').innerHTML = dsum ? '<div class="st-donutwrap sm">' + donut(dv.map(function(d){ return {n:DEV[d.name] || d.name, v:d.count, c:DVC[d.name] || VC.grey}; }), pct((dv.filter(function(d){ return d.name === 'm'; })[0] || {count:0}).count, dsum), '모바일') +
+        '<ul class="st-chlist">' + dv.map(function(d){ return '<li><i style="background:' + (DVC[d.name] || VC.grey) + '"></i><b>' + (DEV[d.name] || d.name) + '</b><span>' + pct(d.count, dsum) + '</span><em>페이지 열람 ' + num(d.count) + '</em></li>'; }).join('') + '</ul></div>' : '<p class="empty-s">아직 데이터가 없습니다.</p>';
     }).catch(function(err){ $('#st-cards').innerHTML = '<p class="empty-s">' + esc(err.message) + '</p>'; });
   }
   $$('#st-range button').forEach(function(b){ b.addEventListener('click', function(){ stDays = +b.dataset.d; $$('#st-range button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); loadStats(); }); });
