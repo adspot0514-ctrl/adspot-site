@@ -4,6 +4,7 @@
  *  관리자: POST /api/admin/login · inquiries · upload · stats · content · backup · restore · indexnow
  *  연결 필요(Cloudflare 설정): D1 데이터베이스 → DB, R2 버킷 → MEDIA, 환경 변수 ADMIN_PASSWORD(·ADMIN_SECRET)
  */
+import { postsTable, listPosts, getPost, SLUG_RE } from "../../lib/posts.js";
 import { json, clip, int, kstDay, rand, db, kvGet, kvSet, makeToken, authed, safeEqual } from "../../lib/core.js";
 
 const STATUSES = ["new", "contacted", "done"];
@@ -340,13 +341,44 @@ export async function onRequest({ request, env }) {
       }
 
       if (path === "/api/admin/backup" && method === "GET") {
-        return json({ ok: true, exportedAt: new Date().toISOString(), content: (await kvGet(env, "content")) || {}, inquiries: await getInquiries(env) });
+        return json({ ok: true, exportedAt: new Date().toISOString(), content: (await kvGet(env, "content")) || {}, inquiries: await getInquiries(env), posts: await listPosts(env).catch(() => []) });
       }
       if (path === "/api/admin/restore" && method === "POST") {
         const body = await request.json().catch(() => null);
         if (!body || typeof body !== "object") return json({ ok: false, error: "백업 파일을 읽을 수 없습니다." }, 400);
         const from = /^https:\/\/[a-z0-9.-]+$/i.test(String(body.fromOrigin || "")) ? body.fromOrigin : "";
         return json({ ok: true, result: await restore(env, body.data || body, from) });
+      }
+
+      /* ---------- 칼럼 ---------- */
+      if (path === "/api/admin/posts" && method === "GET") return json({ ok: true, items: await listPosts(env) });
+      const pm = path.match(/^\/api\/admin\/posts\/([a-z0-9-]+)$/);
+      if (pm) {
+        const slug = pm[1];
+        if (!SLUG_RE.test(slug)) return json({ ok: false, error: "주소는 영문 소문자·숫자·하이픈(-)으로 3~62자로 적어 주세요." }, 400);
+        const D = await postsTable(env);
+        if (method === "DELETE") { await D.prepare("DELETE FROM posts WHERE slug = ?").bind(slug).run(); return json({ ok: true }); }
+        if (method === "PUT") {
+          const b = await request.json().catch(() => ({}));
+          const title = clip(b.title, 120), descr = clip(b.descr, 300), body = String(b.body || "").slice(0, 60000);
+          const status = b.status === "published" ? "published" : "draft";
+          const date = /^\d{4}-\d{2}-\d{2}$/.test(b.date || "") ? b.date : kstDay();
+          if (!title) return json({ ok: false, error: "제목을 적어 주세요." }, 400);
+          if (b.oldSlug && b.oldSlug !== slug && SLUG_RE.test(b.oldSlug)) {
+            if (await getPost(env, slug)) return json({ ok: false, error: "이미 같은 주소의 칼럼이 있습니다." }, 409);
+            await D.prepare("DELETE FROM posts WHERE slug = ?").bind(b.oldSlug).run();
+          }
+          await D.prepare("INSERT INTO posts (slug, title, descr, body, status, date, updated) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(slug) DO UPDATE SET title = excluded.title, descr = excluded.descr, body = excluded.body, status = excluded.status, date = excluded.date, updated = excluded.updated")
+            .bind(slug, title, descr, body, status, date, Date.now()).run();
+          let ping = null;
+          if (status === "published") {   // 발행하면 네이버·빙에 새 주소를 바로 알림
+            const urls = [`https://${HOST}/insights/${slug}/`, `https://${HOST}/insights/`];
+            const data = JSON.stringify({ host: HOST, key: INDEXNOW_KEY, keyLocation: `https://${HOST}/${INDEXNOW_KEY}.txt`, urlList: urls });
+            const r = await Promise.allSettled(["https://searchadvisor.naver.com/indexnow", "https://api.indexnow.org/indexnow"].map((u) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: data }).then((x) => x.status)));
+            ping = r.map((x) => (x.status === "fulfilled" ? x.value : "error"));
+          }
+          return json({ ok: true, slug, ping });
+        }
       }
 
       if (path === "/api/admin/indexnow" && method === "POST") {

@@ -41,9 +41,106 @@
       $('#tab-content').hidden = b.dataset.tab !== 'content';
       $('#tab-region').hidden = b.dataset.tab !== 'region';
       $('#tab-stats').hidden = b.dataset.tab !== 'stats';
+      $('#tab-post').hidden = b.dataset.tab !== 'post';
+      if(b.dataset.tab === 'post') loadPosts();
       if(b.dataset.tab === 'stats') loadStats();
       if(b.dataset.tab === 'region') renderRegion();
     });
+  });
+
+  /* ---------------- 칼럼 ---------------- */
+  var POSTS = [], poCur = null, poOld = '';
+  var PO_STATIC = [['lawyer-marketing-cost','변호사마케팅 비용, 얼마가 적당할까'],['local-keyword-marketing','지역 키워드로 시작하는 변호사마케팅'],['new-lawyer-marketing-checklist','개업 변호사 마케팅 체크리스트'],['field-marketing-strategy','분야별 변호사마케팅 전략: 형사·이혼·분양권·금융사기'],['blog-diy-vs-agency','변호사 블로그 마케팅, 직접 운영과 대행 비교']];
+  var PO_RESERVED = PO_STATIC.map(function(s){ return s[0]; }).concat(['lawyer-ad-rules', 'rss', '_tpl']);
+  function poInline(t){
+    var s = esc(t);
+    s = s.replace(/!\[([^\]]*)\]\(((?:https?:\/\/|\/)[^)\s]+)\)/g, '<img src="$2" alt="$1">');
+    s = s.replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/)[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return s.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  }
+  function poRender(src){   // 서버(lib/posts.js)와 같은 규칙
+    var L = String(src || '').replace(/\r/g, '').split('\n'), out = [], toc = [], i = 0, para = [];
+    var flush = function(){ if(para.length){ out.push('<p>' + poInline(para.join(' ')) + '</p>'); para = []; } };
+    while(i < L.length){
+      var t = L[i].trim(), m;
+      if(!t){ flush(); i++; continue; }
+      if((m = t.match(/^##\s+(.+)$/))){ flush(); toc.push(m[1]); out.push('<h2>' + poInline(m[1]) + '</h2>'); i++; continue; }
+      if((m = t.match(/^###\s+(.+)$/))){ flush(); out.push('<h3>' + poInline(m[1]) + '</h3>'); i++; continue; }
+      if(/^[-*]\s+/.test(t)){ flush(); var it = []; while(i < L.length && /^[-*]\s+/.test(L[i].trim())){ it.push('<li>' + poInline(L[i].trim().replace(/^[-*]\s+/, '')) + '</li>'); i++; } out.push('<ul>' + it.join('') + '</ul>'); continue; }
+      if(/^\d+[.)]\s+/.test(t)){ flush(); var ol = []; while(i < L.length && /^\d+[.)]\s+/.test(L[i].trim())){ ol.push('<li>' + poInline(L[i].trim().replace(/^\d+[.)]\s+/, '')) + '</li>'); i++; } out.push('<ol>' + ol.join('') + '</ol>'); continue; }
+      if(/^>\s?/.test(t)){ flush(); var q = []; while(i < L.length && /^>\s?/.test(L[i].trim())){ q.push(L[i].trim().replace(/^>\s?/, '')); i++; } out.push('<p class="tip">' + poInline(q.join(' ')) + '</p>'); continue; }
+      if(/^\|.*\|$/.test(t)){ flush(); var rows = []; while(i < L.length && /^\|.*\|$/.test(L[i].trim())){ var r = L[i].trim().slice(1, -1).split('|').map(function(c){ return c.trim(); }); if(!r.every(function(c){ return /^:?-{2,}:?$/.test(c); })) rows.push(r); i++; }
+        var h = rows.shift(); out.push('<table><thead><tr>' + h.map(function(c){ return '<th>' + poInline(c) + '</th>'; }).join('') + '</tr></thead><tbody>' + rows.map(function(r){ return '<tr>' + r.map(function(c){ return '<td>' + poInline(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>'); continue; }
+      para.push(t); i++;
+    }
+    flush(); return {html: out.join(''), toc: toc};
+  }
+  function loadPosts(){ $('#po-list').innerHTML = '<p class="hint">불러오는 중…</p>'; return api('GET', '/admin/posts').then(function(j){ POSTS = j.items || []; renderPostList(); }).catch(function(err){ $('#po-list').innerHTML = '<p class="hint">' + esc(err.message) + '</p>'; }); }
+  function d8(ms){ var d = new Date(ms); var p = function(n){ return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate()); }
+  function renderPostList(){
+    $('#po-edit').hidden = true; $('#po-list').hidden = false;
+    var rows = POSTS.map(function(p){ return '<tr><th>' + esc(p.title) + '<small>/insights/' + esc(p.slug) + '/</small></th><td><b class="pill ' + (p.status === 'published' ? 'good' : 'mid') + '">' + (p.status === 'published' ? '발행' : '임시 저장') + '</b></td><td>' + esc(String(p.date).replace(/-/g, '.')) + '</td><td>' + d8(p.updated) + '</td><td class="po-act"><button type="button" class="btn" data-po-edit="' + esc(p.slug) + '">수정</button>' + (p.status === 'published' ? '<a class="btn" href="/insights/' + esc(p.slug) + '/" target="_blank" rel="noopener">보기</a>' : '') + '</td></tr>'; }).join('');
+    $('#po-list').innerHTML = '<section class="st-box"><h3>관리자에서 쓴 칼럼</h3>' + (POSTS.length ? '<div class="st-tbl"><table><thead><tr><th>제목</th><th>상태</th><th>작성일</th><th>마지막 수정</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty-s">아직 쓴 칼럼이 없습니다. 오른쪽 위 <b>새 칼럼 쓰기</b>로 시작해 보세요.</p>') + '</section>' +
+      '<section class="st-box"><h3>처음부터 있던 칼럼 (파일로 만든 글)</h3><ul class="po-static">' + PO_STATIC.map(function(s){ return '<li><a href="/insights/' + s[0] + '/" target="_blank" rel="noopener">' + esc(s[1]) + '</a><small>/insights/' + s[0] + '/</small></li>'; }).join('') + '</ul><p class="hint" style="margin:8px 0 0">이 5편은 파일로 만든 글이라 여기서 고칠 수 없어요. 수정이 필요하면 요청해 주세요. 관리자에서 발행한 칼럼은 칼럼 목록 맨 앞, 사이트맵, RSS에 자동으로 들어가고 네이버·빙에 새 주소를 바로 알립니다.</p></section>';
+    labelTables && labelTables();
+  }
+  function openPost(p){
+    poCur = p; poOld = p ? p.slug : '';
+    var f = $('#po-form'); f.reset();
+    f.title.value = p ? p.title : ''; f.slug.value = p ? p.slug : ''; f.descr.value = p ? p.descr : ''; f.body.value = p ? p.body : '';
+    f.date.value = p ? p.date : new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); f.status.value = p ? p.status : 'draft';
+    $('#po-del').hidden = !p; $('#po-msg').textContent = ''; $('#po-list').hidden = true; $('#po-edit').hidden = false;
+    poPreview(); window.scrollTo(0, 0);
+  }
+  function poPreview(){
+    var f = $('#po-form'), r = poRender(f.body.value), body = f.body.value.replace(/\s+/g, ''), dl = f.descr.value.trim().length;
+    $('#po-dc').textContent = dl + '자';
+    $('#po-prev').innerHTML = '<p class="po-k">변호사마케팅 칼럼</p><h1>' + esc(f.title.value || '제목') + '</h1><p class="po-m">' + esc((f.date.value || '').replace(/-/g, '.')) + ' · 애드스팟 · 읽는 시간 약 ' + Math.max(2, Math.round(body.length / 500)) + '분</p>' +
+      (f.descr.value ? '<p class="po-lead">' + esc(f.descr.value) + '</p>' : '') + (r.toc.length > 1 ? '<div class="po-toc"><b>목차</b><ol>' + r.toc.map(function(t){ return '<li>' + esc(t.replace(/\*\*/g, '')) + '</li>'; }).join('') + '</ol></div>' : '') + r.html;
+    var tl = f.title.value.trim().length, links = (f.body.value.match(/\]\(\//g) || []).length;
+    var CK = [[tl >= 12 && tl <= 40, '제목 12~40자 (지금 ' + tl + '자)'], [dl >= 80 && dl <= 160, '요약 80~160자 (지금 ' + dl + '자)'], [r.toc.length >= 2, '소제목(##) 2개 이상 (지금 ' + r.toc.length + '개)'],
+      [body.length >= 1500, '본문 1,500자 이상 (지금 ' + num(body.length) + '자, 띄어쓰기 제외)'], [links >= 1, '사이트 안 다른 페이지 링크 1개 이상 (지금 ' + links + '개)'], [/변호사|로펌|법무법인|법률/.test(f.title.value), '제목에 변호사·로펌·법무법인·법률 중 하나 포함']];
+    $('#po-check').innerHTML = '<b>검색 노출 점검</b><ul>' + CK.map(function(c){ return '<li class="' + (c[0] ? 'ok' : 'no') + '">' + (c[0] ? '✓ ' : '· ') + c[1] + '</li>'; }).join('') + '</ul>';
+  }
+  function poInsert(before, after, ph){
+    var ta = $('#po-body'), s = ta.selectionStart, e = ta.selectionEnd, v = ta.value, sel = v.slice(s, e) || ph || '';
+    var lineStart = !after && v.lastIndexOf('\n', s - 1) + 1 !== s ? '\n' : '';
+    ta.value = v.slice(0, s) + lineStart + before + sel + (after || '') + v.slice(e); ta.focus();
+    var pos = s + lineStart.length + before.length; ta.setSelectionRange(pos, pos + sel.length); poPreview();
+  }
+  $('#po-new').addEventListener('click', function(){ openPost(null); });
+  $('#po-list').addEventListener('click', function(e){ var b = e.target.closest('[data-po-edit]'); if(!b) return; openPost(POSTS.filter(function(p){ return p.slug === b.dataset.poEdit; })[0]); });
+  $('#po-cancel').addEventListener('click', function(){ renderPostList(); });
+  $('#po-form').addEventListener('input', poPreview);
+  $('#po-form').slug.addEventListener('input', function(e){ e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-{2,}/g, '-'); });
+  $('#po-edit').addEventListener('click', function(e){
+    var b = e.target.closest('[data-ins],[data-wrap],[data-link],[data-tbl]'); if(!b) return;
+    if(b.dataset.ins) poInsert(b.dataset.ins, '', b.dataset.ins === '## ' ? '소제목' : '내용');
+    else if(b.dataset.wrap) poInsert('**', '**', '강조할 말');
+    else if(b.hasAttribute('data-link')){ var u = prompt('연결할 주소를 넣어주세요 (예: /lawyer-marketing/ 또는 https://...)', '/lawyer-marketing/'); if(u) poInsert('[', '](' + u.trim() + ')', '링크 글자'); }
+    else if(b.hasAttribute('data-tbl')) poInsert('| 구분 | 내용 |\n| 항목 | 설명 |\n', '', '');
+  });
+  $('#po-img').addEventListener('change', function(e){
+    var file = e.target.files[0]; if(!file) return; var st = $('#po-st');
+    uploadFile(file, {max:1600}, function(t){ st.textContent = t; }).then(function(m){ st.textContent = '사진을 넣었어요.'; poInsert('![사진 설명](' + m.url.replace(/^(?!\/|https?:)/, '/') + ')\n', '', ''); })
+      .catch(function(err){ st.textContent = err.message; }).then(function(){ e.target.value = ''; });
+  });
+  $('#po-save').addEventListener('click', function(){
+    var f = $('#po-form'), slug = f.slug.value.trim().replace(/^-+|-+$/g, ''); f.slug.value = slug;
+    if(!f.title.value.trim()){ toast('제목을 적어 주세요.'); return; }
+    if(!/^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/.test(slug)){ toast('주소는 영문 소문자·숫자·하이픈(-)으로 3자 이상 적어 주세요.'); f.slug.focus(); return; }
+    if(PO_RESERVED.indexOf(slug) > -1){ toast('이미 쓰고 있는 주소예요. 다른 주소를 적어 주세요.'); return; }
+    if(slug !== poOld && POSTS.some(function(p){ return p.slug === slug; })){ toast('같은 주소의 칼럼이 이미 있어요.'); return; }
+    var btn = $('#po-save'); btn.disabled = true; $('#po-msg').textContent = '저장 중…';
+    api('PUT', '/admin/posts/' + slug, {title:f.title.value, descr:f.descr.value, body:f.body.value, status:f.status.value, date:f.date.value, oldSlug:poOld})
+      .then(function(j){ poOld = slug; $('#po-del').hidden = false; $('#po-msg').textContent = f.status.value === 'published' ? '발행했어요. 칼럼 목록과 사이트맵에 바로 반영되고, 네이버·빙에 새 글을 알렸어요.' : '임시 저장했어요. 발행 전까지 홈페이지에는 보이지 않아요.'; toast('저장했습니다.'); return api('GET', '/admin/posts'); })
+      .then(function(j){ if(j) POSTS = j.items || []; })
+      .catch(function(err){ $('#po-msg').textContent = err.message; toast(err.message); })
+      .then(function(){ btn.disabled = false; });
+  });
+  $('#po-del').addEventListener('click', function(){
+    if(!poOld || !confirm('이 칼럼을 삭제할까요? 되돌릴 수 없습니다.')) return;
+    api('DELETE', '/admin/posts/' + poOld).then(function(){ toast('삭제했습니다.'); return loadPosts(); }).catch(function(err){ toast(err.message); });
   });
 
   /* ---------------- 상담문의 ---------------- */

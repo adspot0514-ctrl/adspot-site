@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>애드스팟 관리자</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="admin.css?v=20261009">
+<link rel="stylesheet" href="admin.css?v=20261011">
 </head>
 <body>
   <!-- 로그인 -->
@@ -30,6 +30,7 @@
           <button type="button" role="tab" data-tab="inq" aria-selected="true">상담문의 <b class="badge" id="new-count" hidden>0</b></button>
           <button type="button" role="tab" data-tab="content" aria-selected="false">홈페이지 수정</button>
           <button type="button" role="tab" data-tab="region" aria-selected="false">지역 페이지</button>
+          <button type="button" role="tab" data-tab="post" aria-selected="false">칼럼</button>
           <button type="button" role="tab" data-tab="stats" aria-selected="false">통계</button>
         </nav>
         <div class="top-act">
@@ -96,6 +97,30 @@
       </div>
     </main>
 
+    <!-- 칼럼 -->
+    <main class="panel" id="tab-post" hidden>
+      <div class="panel-head">
+        <h2>칼럼</h2>
+        <div class="tools"><a class="btn" href="/insights/" target="_blank" rel="noopener">칼럼 목록 보기</a><button type="button" class="btn btn-primary" id="po-new">새 칼럼 쓰기</button></div>
+      </div>
+      <div id="po-list"></div>
+      <div id="po-edit" hidden>
+        <div class="po-grid">
+          <form class="cform po-form" id="po-form" autocomplete="off">
+            <label class="f"><span>제목</span><input name="title" maxlength="120" placeholder="예) 형사 사건 의뢰인이 변호사를 고르는 기준"></label>
+            <label class="f"><span>주소 <small>영문 소문자·숫자·하이픈(-), 발행 후에는 바꾸지 않는 것이 좋아요</small></span><div class="po-slug"><em>/insights/</em><input name="slug" maxlength="62" placeholder="criminal-lawyer-choice"><em>/</em></div></label>
+            <label class="f"><span>요약 <small>검색 결과·목록에 보이는 설명, 80~160자 권장</small> <b id="po-dc">0자</b></span><textarea name="descr" rows="3" maxlength="300"></textarea></label>
+            <label class="f"><span>본문</span><textarea name="body" id="po-body" rows="22" placeholder="첫 문단을 쓰고...&#10;&#10;## 소제목&#10;문단을 씁니다. **굵게**, [링크](/lawyer-marketing/)&#10;&#10;- 목록&#10;- 목록&#10;&#10;> 강조 박스 문장&#10;&#10;| 구분 | 내용 |&#10;| 형사 | 내용 |"></textarea></label>
+            <div class="po-tools"><button type="button" class="btn" data-ins="## ">소제목</button><button type="button" class="btn" data-ins="- ">목록</button><button type="button" class="btn" data-ins="> ">강조 박스</button><button type="button" class="btn" data-wrap="**">굵게</button><button type="button" class="btn" data-link>링크</button><label class="btn">사진 넣기<input type="file" accept="image/*" id="po-img" hidden></label><button type="button" class="btn" data-tbl>표</button><span class="m-status" id="po-st"></span></div>
+            <div class="po-row"><label class="f"><span>작성일</span><input type="date" name="date"></label><label class="f"><span>상태</span><select name="status"><option value="draft">임시 저장 (비공개)</option><option value="published">발행 (공개)</option></select></label></div>
+            <div class="po-check" id="po-check"></div>
+          </form>
+          <section class="po-prev"><div class="po-prev-h">미리보기</div><article class="po-art" id="po-prev"></article></section>
+        </div>
+        <div class="savebar"><span class="save-msg" id="po-msg"></span><button type="button" class="btn" id="po-cancel">목록으로</button><button type="button" class="btn" id="po-del">삭제</button><button type="button" class="btn btn-primary" id="po-save">저장하기</button></div>
+      </div>
+    </main>
+
     <!-- 통계 -->
     <main class="panel" id="tab-stats" hidden>
       <div class="panel-head">
@@ -142,6 +167,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="../content-defaults.js?v=20261009"></script>
 <script src="../regions-defaults.js?v=20261009"></script>
-<script src="admin.js?v=20261009"></script>
+<script src="admin.js?v=20261011"></script>
 </body>
 </html>
