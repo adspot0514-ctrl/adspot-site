@@ -359,3 +359,20 @@ label.btn{display:inline-flex;align-items:center;cursor:pointer}
 @media (max-width:860px){.po-row{grid-template-columns:1fr}.po-act .btn{margin:4px 4px 0 0}}
 
 #tab-post .tools a.btn{text-decoration:none}
+
+/* ---------- 문의 알림 ---------- */
+.nt-box{margin:18px 0 0;background:#fff;border:1px solid var(--line);border-radius:14px}
+.nt-box summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;list-style:none}
+.nt-box summary::-webkit-details-marker{display:none}
+.nt-box summary span{font-size:13px;font-weight:800;padding:3px 10px;border-radius:99px;background:#f4f5f7;color:#5b616e}
+.nt-box summary span.on{background:#e6f4ec;color:#2f8f5b}.nt-box summary span.off{background:#fdf1e7;color:#b25a1c}
+.nt-in{padding:0 18px 16px}
+.nt-st{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13.5px}
+.nt-st li.ok{color:#2f8f5b;font-weight:700}.nt-st li.no{color:#8a5a2b}
+.nt-act{display:flex;align-items:center;gap:10px;margin:12px 0}
+.nt-in code{background:#f4f5f7;padding:1px 5px;border-radius:5px;font-size:12px}
+.nt-kk{display:grid;gap:6px;margin:0 0 10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;font-size:13.5px}
+.nt-kk ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.nt-kk li.ok,.nt-kk .ok{color:#2f8f5b;font-weight:700}.nt-kk li.no,.nt-kk .no{color:#8a5a2b}
+.nt-kk .btn{height:30px;padding:0 10px;font-size:12.5px;justify-self:start}
+.nt-kk li .btn{margin-left:6px}

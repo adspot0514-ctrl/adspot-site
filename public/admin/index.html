@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>애드스팟 관리자</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="admin.css?v=20261011">
+<link rel="stylesheet" href="admin.css?v=20261013">
 </head>
 <body>
   <!-- 로그인 -->
@@ -58,7 +58,11 @@
       </div>
       <p class="empty" id="inq-empty" hidden>아직 접수된 상담문의가 없습니다.</p>
       <ul class="inq-list" id="inq-list"></ul>
-    </main>
+          <details class="nt-box" id="nt-box"><summary><b>문의 알림 (카카오톡·문자·이메일)</b><span id="nt-sum">확인 중…</span></summary>
+        <div class="nt-in"><div id="nt-status"></div>
+          <div class="nt-act"><button type="button" class="btn btn-primary" id="nt-test">시험 알림 보내기</button><span class="m-status" id="nt-msg"></span></div>
+          <p class="hint">카카오톡: Cloudflare에 <code>KAKAO_REST_KEY</code>를 넣은 뒤 “내 카카오톡 연결하기”로 각자 연결합니다(여러 명 가능). 문자: <code>SOLAPI_API_KEY</code> · <code>SOLAPI_API_SECRET</code> · <code>SMS_FROM</code>(등록한 발신번호) · <code>SMS_TO</code>(받는 번호, 여러 개는 쉼표). 이메일: <code>RESEND_API_KEY</code> · <code>MAIL_TO</code>(받는 메일). 설정 후에는 사이트를 한 번 다시 배포해야 적용됩니다.</p></div></details>
+</main>
 
     <!-- 홈페이지 수정 -->
     <main class="panel" id="tab-content" hidden>
@@ -167,6 +171,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="../content-defaults.js?v=20261009"></script>
 <script src="../regions-defaults.js?v=20261009"></script>
-<script src="admin.js?v=20261011"></script>
+<script src="admin.js?v=20261013"></script>
 </body>
 </html>

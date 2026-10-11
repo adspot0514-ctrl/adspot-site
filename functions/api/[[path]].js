@@ -5,6 +5,7 @@
  *  연결 필요(Cloudflare 설정): D1 데이터베이스 → DB, R2 버킷 → MEDIA, 환경 변수 ADMIN_PASSWORD(·ADMIN_SECRET)
  */
 import { postsTable, listPosts, getPost, SLUG_RE } from "../../lib/posts.js";
+import { smsReady, mailReady, notifyAll, inquiryText, inquiryKakaoText, kakaoReady, kakaoAccounts, kakaoAuthUrl, kakaoConnect, kakaoKeepAlive } from "../../lib/notify.js";
 import { json, clip, int, kstDay, rand, db, kvGet, kvSet, makeToken, authed, safeEqual } from "../../lib/core.js";
 
 const STATUSES = ["new", "contacted", "done"];
@@ -208,7 +209,7 @@ async function restore(env, data, fromOrigin) {
   return out;
 }
 
-export async function onRequest({ request, env }) {
+export async function onRequest({ request, env, waitUntil }) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/\/+$/, "");
   const method = request.method.toUpperCase();
@@ -237,6 +238,8 @@ export async function onRequest({ request, env }) {
         source: body.source === "estimate" ? "estimate" : "form", combo: sanitizeCombo(body.combo), status: "new", memo: "",
       };
       await putInquiry(env, rec);
+      // 문자 알림: 응답을 늦추지 않도록 뒤에서 보냄
+      if (smsReady(env) || mailReady(env) || env.KAKAO_REST_KEY) { const job = notifyAll(env, inquiryText(rec, HOST), "[애드스팟] 새 상담 문의 · " + (rec.office || rec.phone), inquiryKakaoText(rec), HOST).catch(() => {}); if (typeof waitUntil === "function") waitUntil(job); else await job; }
       if (rec.sid) await (await db(env)).prepare("INSERT INTO acts (day, t, sid, v, p, a, val) VALUES (?, ?, ?, '', ?, '상담 신청', ?)")
         .bind(kstDay(now), now, rec.sid, rec.page || "/", rec.source === "estimate" ? "견적 조합" : "신청서").run();
       return json({ ok: true, id: rec.id });
@@ -260,6 +263,16 @@ export async function onRequest({ request, env }) {
       await D.prepare("INSERT INTO events (day, t, p, v, s, r, k, d, sid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(kstDay(), Date.now(), p, clip(body.v, 24), clip(body.s, 30), clip(body.r, 20), clip(body.k, 60), /Mobi|Android|iPhone|iPad/i.test(ua) ? "m" : "pc", clip(body.sid, 24)).run();
       return new Response(null, { status: 204 });
+    }
+
+    if (path === "/api/kakao/callback" && method === "GET") {
+      const page = (msg, ok) => new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>카카오톡 알림 연결</title><body style="font-family:sans-serif;padding:40px 20px;text-align:center"><h2>${ok ? "카카오톡 알림이 연결됐습니다" : "연결하지 못했습니다"}</h2><p>${msg}</p><p><a href="/admin/">관리자로 돌아가기</a></p></body>`, { status: ok ? 200 : 400, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+      const st = await kvGet(env, "kakao-state");
+      if (!st || st.v !== url.searchParams.get("state") || Date.now() - st.t > 10 * 60000) return page("연결 시간이 지났습니다. 관리자에서 다시 연결해 주세요.", false);
+      await kvSet(env, "kakao-state", null);
+      if (url.searchParams.get("error")) return page("카카오 동의가 취소되었습니다.", false);
+      try { const a = await kakaoConnect(env, HOST, url.searchParams.get("code") || ""); return page(`${String(a.name).replace(/[<>&]/g, "")} 님의 '나와의 채팅'으로 문의 알림이 갑니다.`, true); }
+      catch (e) { return page(String(e.message).replace(/[<>&]/g, ""), false); }
     }
 
     if (path === "/api/admin/login" && method === "POST") {
@@ -348,6 +361,25 @@ export async function onRequest({ request, env }) {
         if (!body || typeof body !== "object") return json({ ok: false, error: "백업 파일을 읽을 수 없습니다." }, 400);
         const from = /^https:\/\/[a-z0-9.-]+$/i.test(String(body.fromOrigin || "")) ? body.fromOrigin : "";
         return json({ ok: true, result: await restore(env, body.data || body, from) });
+      }
+
+      /* ---------- 문의 알림 (문자·이메일) ---------- */
+      if (path === "/api/admin/notify" && method === "GET") {
+        const acc = env.KAKAO_REST_KEY ? await kakaoKeepAlive(env).catch(() => []) : [];
+        return json({ ok: true, sms: smsReady(env), mail: mailReady(env), kakaoKey: !!env.KAKAO_REST_KEY, kakao: acc.map((x) => ({ id: x.id, name: x.name, at: x.at, dead: !!x.dead })), last: (await kvGet(env, "notify-last")) || null });
+      }
+      if (path === "/api/admin/kakao/start" && method === "POST") {
+        if (!env.KAKAO_REST_KEY) return json({ ok: false, error: "KAKAO_REST_KEY 환경 변수가 아직 없습니다." }, 400);
+        const state = rand(12); await kvSet(env, "kakao-state", { v: state, t: Date.now() });
+        return json({ ok: true, url: kakaoAuthUrl(env, HOST, state) });
+      }
+      const kd = path.match(/^\/api\/admin\/kakao\/([0-9a-z]+)$/);
+      if (kd && method === "DELETE") { const list = (await kakaoAccounts(env)).filter((x) => x.id !== kd[1]); await kvSet(env, "kakao-accounts", list); return json({ ok: true }); }
+      if (path === "/api/admin/notify/test" && method === "POST") {
+        if (!smsReady(env) && !mailReady(env) && !(await kakaoReady(env))) return json({ ok: false, error: "알림 설정이 아직 없습니다. 안내에 따라 설정해 주세요." }, 400);
+        const r = await notifyAll(env, "[애드스팟] 알림 시험 발송입니다.\n홈페이지 상담 문의가 접수되면 이렇게 알림이 옵니다.\n관리자: https://" + HOST + "/admin/", "[애드스팟] 알림 시험", "[애드스팟] 알림 시험 발송입니다.\n상담 문의가 접수되면 이렇게 카톡이 옵니다.", HOST);
+        const ok = Object.values(r).every((x) => x && x.ok);
+        return json({ ok, result: r, error: ok ? undefined : "일부 발송에 실패했습니다. 아래 결과를 확인해 주세요." }, ok ? 200 : 502);
       }
 
       /* ---------- 칼럼 ---------- */

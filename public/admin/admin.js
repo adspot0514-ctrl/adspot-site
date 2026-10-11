@@ -143,11 +143,39 @@
     api('DELETE', '/admin/posts/' + poOld).then(function(){ toast('삭제했습니다.'); return loadPosts(); }).catch(function(err){ toast(err.message); });
   });
 
+  /* ---------------- 문의 알림 상태 ---------------- */
+  function ntWhen(iso){ var d = new Date(iso); var p = function(n){ return (n < 10 ? '0' : '') + n; }; return (d.getMonth() + 1) + '.' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+  function ntLine(name, r){ if(!r) return ''; var ok = r.ok; var det = (r.results || []).map(function(x){ return esc(x.to || '') + ' ' + (x.ok ? '성공' : '실패' + (x.msg ? ' (' + esc(x.msg) + ')' : '')); }).join(' · ') || esc(r.error || ''); return '<li class="' + (ok ? 'ok' : 'no') + '">' + name + ': ' + (ok ? '성공' : '실패') + (det ? ' — ' + det : '') + '</li>'; }
+  function loadNotify(){
+    return api('GET', '/admin/notify').then(function(j){
+      var kk = (j.kakao || []).filter(function(a){ return !a.dead; });
+      var on = [kk.length ? '카카오톡' : '', j.sms ? '문자' : '', j.mail ? '이메일' : ''].filter(Boolean);
+      $('#nt-sum').textContent = on.length ? on.join(' · ') + ' 켜짐' : '꺼짐 (설정 필요)'; $('#nt-sum').className = on.length ? 'on' : 'off';
+      var L = j.last;
+      var kHTML = '<div class="nt-kk"><b>카카오톡</b>' + (!j.kakaoKey ? '<span class="no">설정 안 됨 — Cloudflare에 KAKAO_REST_KEY를 넣은 뒤 연결할 수 있어요</span>' :
+        ((j.kakao || []).length ? '<ul>' + j.kakao.map(function(a){ return '<li class="' + (a.dead ? 'no' : 'ok') + '">' + esc(a.name) + (a.dead ? ' — 연결 만료, 다시 연결해 주세요' : ' — 연결됨') + ' <button type="button" class="btn" data-kk-del="' + esc(a.id) + '">해제</button></li>'; }).join('') + '</ul>' : '<span class="no">아직 연결된 카카오 계정이 없어요</span>') +
+        '<button type="button" class="btn" id="nt-kk-con">내 카카오톡 연결하기</button>') + '</div>';
+      $('#nt-status').innerHTML = kHTML + '<ul class="nt-st"><li class="' + (j.sms ? 'ok' : 'no') + '">문자(SMS): ' + (j.sms ? '설정됨' : '설정 안 됨') + '</li><li class="' + (j.mail ? 'ok' : 'no') + '">이메일: ' + (j.mail ? '설정됨' : '설정 안 됨') + '</li></ul>' +
+        (L ? '<p class="hint" style="margin:8px 0 0">마지막 발송 ' + ntWhen(L.at) + '</p><ul class="nt-st">' + ntLine('카카오톡', L.kakao) + ntLine('문자', L.sms) + ntLine('이메일', L.mail) + '</ul>' : '');
+      $('#nt-test').disabled = !on.length;
+    }).catch(function(){ $('#nt-sum').textContent = '확인 불가'; });
+  }
+  $('#nt-status') && document.addEventListener('click', function(e){
+    if(e.target.id === 'nt-kk-con'){ e.target.disabled = true; api('POST', '/admin/kakao/start').then(function(j){ location.href = j.url; }).catch(function(err){ toast(err.message); e.target.disabled = false; }); }
+    var d = e.target.closest && e.target.closest('[data-kk-del]');
+    if(d && confirm('이 카카오 계정의 알림 연결을 해제할까요?')) api('DELETE', '/admin/kakao/' + d.dataset.kkDel).then(loadNotify).catch(function(err){ toast(err.message); });
+  });
+  $('#nt-test').addEventListener('click', function(){
+    var b = $('#nt-test'); b.disabled = true; $('#nt-msg').textContent = '보내는 중…';
+    api('POST', '/admin/notify/test').then(function(){ $('#nt-msg').textContent = '보냈어요. 휴대폰·메일을 확인해 보세요.'; })
+      .catch(function(err){ $('#nt-msg').textContent = err.message; }).then(function(){ b.disabled = false; loadNotify(); });
+  });
   /* ---------------- 상담문의 ---------------- */
   var items = [], filter = 'all', query = '';
   var ST = {new:'신규', contacted:'연락함', done:'완료'};
   function fmt(iso){ var d = new Date(iso); var p = function(n){ return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '.' + p(d.getMonth()+1) + '.' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
   function loadInquiries(){
+    loadNotify();
     return api('GET', '/admin/inquiries').then(function(j){ items = j.items || []; renderInquiries(); }).catch(function(err){ toast(err.message); });
   }
   function srcText(i){ var s = i.ad; if(!s || typeof s !== 'object') return ''; return [s.region ? s.region + ' 지역' : '', s.src || '', s.kw ? '키워드: ' + s.kw : ''].filter(Boolean).join(' · '); }
