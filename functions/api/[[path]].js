@@ -5,7 +5,7 @@
  *  연결 필요(Cloudflare 설정): D1 데이터베이스 → DB, R2 버킷 → MEDIA, 환경 변수 ADMIN_PASSWORD(·ADMIN_SECRET)
  */
 import { postsTable, listPosts, getPost, SLUG_RE } from "../../lib/posts.js";
-import { smsReady, mailReady, notifyAll, inquiryText, inquiryKakaoText, kakaoReady, kakaoAccounts, kakaoAuthUrl, kakaoConnect, kakaoKeepAlive } from "../../lib/notify.js";
+import { smsReady, mailReady, notifyAll, inquiryText, inquiryKakaoText, kakaoReady, kakaoAccounts, kakaoAuthUrl, kakaoConnect, kakaoKeepAlive, kakaoDisconnect } from "../../lib/notify.js";
 import { json, clip, int, kstDay, rand, db, kvGet, kvSet, makeToken, authed, safeEqual } from "../../lib/core.js";
 
 const STATUSES = ["new", "contacted", "done"];
@@ -374,7 +374,7 @@ export async function onRequest({ request, env, waitUntil }) {
         return json({ ok: true, url: kakaoAuthUrl(env, HOST, state) });
       }
       const kd = path.match(/^\/api\/admin\/kakao\/([0-9a-z]+)$/);
-      if (kd && method === "DELETE") { const list = (await kakaoAccounts(env)).filter((x) => x.id !== kd[1]); await kvSet(env, "kakao-accounts", list); return json({ ok: true }); }
+      if (kd && method === "DELETE") { await kakaoDisconnect(env, kd[1]); return json({ ok: true }); }
       if (path === "/api/admin/notify/test" && method === "POST") {
         if (!smsReady(env) && !mailReady(env) && !(await kakaoReady(env))) return json({ ok: false, error: "알림 설정이 아직 없습니다. 안내에 따라 설정해 주세요." }, 400);
         const r = await notifyAll(env, "[애드스팟] 알림 시험 발송입니다.\n홈페이지 상담 문의가 접수되면 이렇게 알림이 옵니다.\n관리자: https://" + HOST + "/admin/", "[애드스팟] 알림 시험", "[애드스팟] 알림 시험 발송입니다.\n상담 문의가 접수되면 이렇게 카톡이 옵니다.", HOST);

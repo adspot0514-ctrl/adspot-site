@@ -158,6 +158,7 @@
       $('#nt-status').innerHTML = kHTML + '<ul class="nt-st"><li class="' + (j.sms ? 'ok' : 'no') + '">문자(SMS): ' + (j.sms ? '설정됨' : '설정 안 됨') + '</li><li class="' + (j.mail ? 'ok' : 'no') + '">이메일: ' + (j.mail ? '설정됨' : '설정 안 됨') + '</li></ul>' +
         (L ? '<p class="hint" style="margin:8px 0 0">마지막 발송 ' + ntWhen(L.at) + '</p><ul class="nt-st">' + ntLine('카카오톡', L.kakao) + ntLine('문자', L.sms) + ntLine('이메일', L.mail) + '</ul>' : '');
       $('#nt-test').disabled = !on.length;
+      if(!on.length || (j.kakaoKey && !kk.length)) $('#nt-box').open = true;   // 아직 연결 전이면 펼쳐서 보여줌
     }).catch(function(){ $('#nt-sum').textContent = '확인 불가'; });
   }
   $('#nt-status') && document.addEventListener('click', function(e){
