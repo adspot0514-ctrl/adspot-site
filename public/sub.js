@@ -106,8 +106,12 @@
       var host = ''; try{ host = document.referrer ? new URL(document.referrer).hostname : ''; }catch(e){}
       var ext = host && host !== location.hostname;
       // 유입 채널 판별: 광고(파워링크) 표시가 있으면 광고, 아니면 들어온 곳(검색·블로그·카페 등)
-      var paid = q.get('n_media') || q.get('ch') === 'pl' || /^(cpc|ppc|paid|powerlink)$/i.test(q.get('utm_medium') || '') || !!q.get('r');   // 지역 광고 랜딩(?r=)은 광고 전용 주소
-      var s = paid ? (q.get('n_media') || q.get('ch') === 'pl' || q.get('r') ? '네이버 파워링크' : '광고(' + (q.get('utm_source') || '기타') + ')')
+      // 네이버 광고 클릭 흔적: 광고 클릭 시 붙는 NaPm(tr=sa 파워링크, tr=brnd 브랜드검색), 광고 중계 주소에서 넘어온 경우
+      var napm = q.get('NaPm') || q.get('napm') || '';
+      var naBrand = /tr=brnd/i.test(napm), naAd = !!napm && !naBrand;
+      var adRef = /(^|\.)(ad\.search\.naver\.com|m\.ad\.search\.naver\.com|adcr\.naver\.com|ader\.naver\.com|siape\.veta\.naver\.com|nam\.veta\.naver\.com)$/.test(host);
+      var paid = q.get('n_media') || q.get('ch') === 'pl' || /^(cpc|ppc|paid|powerlink)$/i.test(q.get('utm_medium') || '') || !!q.get('r') || naAd || naBrand || adRef;   // 지역 광고 랜딩(?r=)은 광고 전용 주소
+      var s = paid ? (naBrand ? '광고(네이버 브랜드검색)' : (q.get('n_media') || q.get('ch') === 'pl' || q.get('r') || naAd || adRef) ? '네이버 파워링크' : '광고(' + (q.get('utm_source') || '기타') + ')')
             : (q.get('utm_source') ? q.get('utm_source') : (ext ? (/blog\.naver/.test(host) ? '네이버 블로그' : /cafe\.naver/.test(host) ? '네이버 카페' : /(^|\.)naver\.com$/.test(host) ? '네이버 검색'
               : /google\./.test(host) ? '구글 검색' : /daum\.net/.test(host) ? '다음 검색' : /kakao/.test(host) ? '카카오' : /bing\./.test(host) ? '빙 검색' : /(instagram|facebook|youtube)\./.test(host) ? 'SNS' : '다른 사이트')
             : ((function(){ try{ return sessionStorage.getItem('adspot-entry'); }catch(e){ return ''; } })() || (saved && saved.src) || (host ? '사이트 내 이동' : '직접 방문'))));   // 사이트 안 이동은 처음 들어온 채널을 이어받음
