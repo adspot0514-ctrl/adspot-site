@@ -389,7 +389,7 @@
     }
     setSpeed();
     box.querySelectorAll('img').forEach(function(im){ if(!im.complete) im.addEventListener('load', setSpeed, {once:true}); });
-    var tm; window.addEventListener('resize', function(){ clearTimeout(tm); tm = setTimeout(setSpeed, 150); });
+    var tm, lw = window.innerWidth; window.addEventListener('resize', function(){ if(Math.abs(window.innerWidth - lw) <= 1) return; lw = window.innerWidth; clearTimeout(tm); tm = setTimeout(setSpeed, 150); });   // 주소창 높이 변화는 무시
   }
   function applySharedTexts(C){
     var TX = C.texts || {}, DT = D.texts || {};

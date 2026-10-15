@@ -1,3 +1,9 @@
+/* 휴대폰 주소창이 숨었다 나타날 때(높이만 바뀔 때)는 다시 계산하지 않도록: 폭이 바뀔 때만 반응 */
+var __touch = window.matchMedia && matchMedia('(hover:none) and (pointer:coarse)').matches;
+var __svh = window.innerHeight, __svw = window.innerWidth;
+window.addEventListener('resize', function(){ if(!__touch || Math.abs(window.innerWidth - __svw) > 1){ __svw = window.innerWidth; __svh = window.innerHeight; } });
+function stableVH(){ return __touch ? __svh : window.innerHeight; }
+function onWidthResize(fn){ var w = window.innerWidth; window.addEventListener('resize', function(){ if(__touch && Math.abs(window.innerWidth - w) <= 1) return; w = window.innerWidth; fn(); }); }
 /* ADSPOT / LAWAD — app.js */
 var __adspotStart = function(C){
   'use strict';
@@ -457,12 +463,12 @@ var __adspotStart = function(C){
     fitAll();
     if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
     window.addEventListener('load', fitAll);
-    window.addEventListener('resize', function(){ requestAnimationFrame(fitAll); });
+    onWidthResize(function(){ requestAnimationFrame(fitAll); });
   }
   // 2) 시계 패널·성장 이야기 카드가 화면에 들어오며 살짝 커짐
   var scalers = document.querySelectorAll('.clock, .story');
   var scrollFx = function(){
-    var vh = window.innerHeight;
+    var vh = stableVH();
     if(!reduceMotion){
       scalers.forEach(function(el){
         var t = el.getBoundingClientRect().top;
@@ -484,7 +490,7 @@ var __adspotStart = function(C){
   }
   var fxTick = false;
   window.addEventListener('scroll', function(){ if(!fxTick){ fxTick = true; requestAnimationFrame(function(){ fxTick = false; scrollFx(); }); } }, {passive:true});
-  window.addEventListener('resize', scrollFx);
+  onWidthResize(scrollFx);
   scrollFx();
 
   /* ---------------- [테스트] 스크롤 쇼케이스 (고정 무대 + 진행도) ---------------- */
@@ -509,7 +515,7 @@ var __adspotStart = function(C){
     var mo = function(){ return window.matchMedia('(max-width:767px)').matches; };
     var cap = function(el, t){ el.style.setProperty('--co', t.toFixed(3)); el.style.setProperty('--ct', (24 * (1 - t)).toFixed(1) + 'px'); };
     var paint = function(){
-      var vh = window.innerHeight, r = scSec.getBoundingClientRect();
+      var vh = stableVH(), r = scSec.getBoundingClientRect();
       var p = clamp(-r.top / Math.max(1, r.height - vh));
       // 1) 작은 창 → 전체 화면
       var t1 = inout(seg(p, .02, .24));
@@ -580,7 +586,7 @@ var __adspotStart = function(C){
     function fitHero(){
       if(!window.matchMedia('(max-width:1024px)').matches){ heroEl.style.removeProperty('--media-h'); return; }
       var isMo = window.matchMedia('(max-width:767px)').matches;
-      var vh = window.innerHeight;
+      var vh = stableVH();
       var mb = (mbarEl && getComputedStyle(mbarEl).display !== 'none') ? mbarEl.offsetHeight : 0;
       var hh = headerEl.offsetHeight;
       var content = innerEl.offsetHeight + (barEl ? (isMo ? 18 : 22) + barEl.offsetHeight : 0);
@@ -591,7 +597,7 @@ var __adspotStart = function(C){
       heroEl.style.setProperty('--media-h', Math.round(Math.max(isMo ? 170 : 112, Math.min(cap, avail))) + 'px');
     }
     fitHero();
-    window.addEventListener('resize', function(){ requestAnimationFrame(fitHero); });
+    onWidthResize(function(){ requestAnimationFrame(fitHero); });
     if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitHero);
     window.addEventListener('load', fitHero);
   })();
@@ -1271,6 +1277,6 @@ var __adspotStart = function(C){
   }
   setMarqueeSpeed();
   document.querySelectorAll('.marquee img').forEach(function(im){ if(!im.complete) im.addEventListener('load', setMarqueeSpeed, {once:true}); });
-  var mqTimer; window.addEventListener('resize', function(){ clearTimeout(mqTimer); mqTimer = setTimeout(setMarqueeSpeed, 150); });
+  var mqTimer; onWidthResize(function(){ clearTimeout(mqTimer); mqTimer = setTimeout(setMarqueeSpeed, 150); });
 };
 (window.__adspotContent || Promise.resolve(null)).then(__adspotStart, function(){ __adspotStart(null); });
