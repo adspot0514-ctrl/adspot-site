@@ -654,3 +654,16 @@ main>section[id]{scroll-margin-top:72px}
 .ins-meta{font-size:12.5px;font-weight:700;color:#d9772f}
 .ins-more{font-size:14px;font-weight:800;color:var(--ink)}
 @media (max-width:640px){.art-body{font-size:16px}.ins-list{grid-template-columns:1fr}}
+/* ---------- 상품 바로가기 썸네일 (메인과 같은 모양) ---------- */
+.svc{padding:clamp(40px,5vw,56px) 0;border-top:1px solid var(--line);background:#fff}
+.svc-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.svc-head h2{margin:0;font-size:19px;font-weight:800;letter-spacing:-.03em;color:var(--ink)}
+.svc-head p{margin:0;font-size:14px;color:var(--muted)}
+.svc-list{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+.svc-list.svc-4{grid-template-columns:repeat(4,minmax(0,1fr));max-width:760px}
+.svc-card{display:block;color:var(--ink);text-decoration:none}
+.svc-card img{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:#f4f5f7;transition:transform .25s ease,box-shadow .25s ease}
+.svc-card h3{margin:9px 2px 0;font-size:13.5px;font-weight:700;line-height:1.4;color:var(--ink-2)}
+@media (hover:hover){.svc-card:hover img{transform:translateY(-3px);box-shadow:0 12px 26px -16px rgba(22,25,30,.45)}.svc-card:hover h3{color:var(--gold-deep)}}
+@media (max-width:900px){.svc-list,.svc-list.svc-4{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px;max-width:none}.svc-list::-webkit-scrollbar{display:none}.svc-card{flex:0 0 30%;scroll-snap-align:start}}
+.svc-links a{font-weight:700;color:var(--ink);text-decoration:underline;text-decoration-color:rgba(217,119,47,.5);text-underline-offset:3px}
