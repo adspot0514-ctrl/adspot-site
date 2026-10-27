@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>애드스팟 관리자</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="admin.css?v=20261014">
+<link rel="stylesheet" href="admin.css?v=20261027">
 </head>
 <body>
   <!-- 로그인 -->
@@ -29,6 +29,7 @@
         <nav class="tabs" role="tablist">
           <button type="button" role="tab" data-tab="inq" aria-selected="true">상담문의 <b class="badge" id="new-count" hidden>0</b></button>
           <button type="button" role="tab" data-tab="content" aria-selected="false">홈페이지 수정</button>
+          <button type="button" role="tab" data-tab="seo" aria-selected="false">검색 노출</button>
           <button type="button" role="tab" data-tab="region" aria-selected="false">지역 페이지</button>
           <button type="button" role="tab" data-tab="post" aria-selected="false">칼럼</button>
           <button type="button" role="tab" data-tab="stats" aria-selected="false">통계</button>
@@ -81,6 +82,33 @@
         <span class="save-msg" id="save-msg"></span>
         <button type="button" class="btn" id="content-reload">변경 취소</button>
         <button type="button" class="btn btn-primary" id="content-save">저장하기</button>
+      </div>
+    </main>
+
+    <!-- 검색 노출 (페이지별 검색 제목·설명) -->
+    <main class="panel" id="tab-seo" hidden>
+      <div class="panel-head">
+        <h2>검색 노출</h2>
+        <div class="tools">
+          <select id="seo-sel" class="rg-sel" aria-label="페이지 선택"></select>
+          <a class="btn" id="seo-view" href="/" target="_blank" rel="noopener">페이지 보기</a>
+        </div>
+      </div>
+      <p class="hint" style="margin:-6px 0 18px">네이버·구글 검색 결과에 보이는 <b>파란 제목</b>과 그 아래 <b>설명 문장</b>을 페이지별로 바꿉니다. 저장하면 검색 로봇이 읽는 페이지 자체가 바뀌고, 검색 결과에는 다시 수집된 뒤(보통 며칠) 반영됩니다. 지역 페이지는 ‘지역 페이지’ 탭, 새로 쓴 칼럼은 ‘칼럼’ 탭에서 수정하세요.</p>
+      <div class="seo-grid">
+        <form id="seo-form" class="cform" autocomplete="off"></form>
+        <section class="seo-prev-wrap">
+          <div class="seo-prev-h">검색 결과 미리보기 <small>(모바일 네이버 기준, 실제와 조금 다를 수 있음)</small></div>
+          <div class="seo-prev" id="seo-prev"></div>
+          <div class="seo-list-h">페이지별 상태</div>
+          <ul class="seo-list" id="seo-list"></ul>
+        </section>
+      </div>
+      <div class="savebar" id="seo-bar">
+        <span class="save-msg" id="seo-msg"></span>
+        <button type="button" class="btn" id="seo-reset">기본값으로 되돌리기</button>
+        <button type="button" class="btn" id="seo-ping" title="네이버·빙에 이 페이지가 바뀌었다고 알립니다">이 페이지 검색엔진에 알리기</button>
+        <button type="button" class="btn btn-primary" id="seo-save">이 페이지 저장하기</button>
       </div>
     </main>
 
@@ -172,6 +200,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="../content-defaults.js?v=20261009"></script>
 <script src="../regions-defaults.js?v=20261009"></script>
-<script src="admin.js?v=20261014"></script>
+<script src="admin.js?v=20261027"></script>
 </body>
 </html>

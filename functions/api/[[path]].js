@@ -414,8 +414,10 @@ export async function onRequest({ request, env, waitUntil }) {
       }
 
       if (path === "/api/admin/indexnow" && method === "POST") {
-        const urls = ["/", "/lawyer-marketing/", "/law-firm-marketing/", "/legal-marketing/", "/regions/", "/llms.txt",
-          ...["seoul", "busan", "daegu", "incheon", "daejeon", "ulsan", "sejong", "gyeonggi", "gangwon", "chungbuk", "chungnam", "jeonbuk", "gwangju-jeonnam", "gyeongbuk", "gyeongnam", "jeju"].map((r) => `/regions/${r}/`)]
+        let only = null;
+        try { const b = await request.json(); if (b && Array.isArray(b.paths)) only = b.paths.filter((x) => typeof x === "string" && /^\/[a-z0-9\-\/]*$/.test(x)).slice(0, 50); } catch (e) {}
+        const urls = (only && only.length ? only : ["/", "/lawyer-marketing/", "/law-firm-marketing/", "/legal-marketing/", "/regions/", "/llms.txt",
+          ...["seoul", "busan", "daegu", "incheon", "daejeon", "ulsan", "sejong", "gyeonggi", "gangwon", "chungbuk", "chungnam", "jeonbuk", "gwangju-jeonnam", "gyeongbuk", "gyeongnam", "jeju"].map((r) => `/regions/${r}/`)])
           .map((p) => `https://${HOST}${p}`);
         const data = JSON.stringify({ host: HOST, key: INDEXNOW_KEY, keyLocation: `https://${HOST}/${INDEXNOW_KEY}.txt`, urlList: urls });
         const res = await Promise.allSettled(["https://searchadvisor.naver.com/indexnow", "https://api.indexnow.org/indexnow"].map((u) =>

@@ -40,11 +40,13 @@
       $('#tab-inq').hidden = b.dataset.tab !== 'inq';
       $('#tab-content').hidden = b.dataset.tab !== 'content';
       $('#tab-region').hidden = b.dataset.tab !== 'region';
+      $('#tab-seo').hidden = b.dataset.tab !== 'seo';
       $('#tab-stats').hidden = b.dataset.tab !== 'stats';
       $('#tab-post').hidden = b.dataset.tab !== 'post';
       if(b.dataset.tab === 'post') loadPosts();
       if(b.dataset.tab === 'stats') loadStats();
       if(b.dataset.tab === 'region') renderRegion();
+      if(b.dataset.tab === 'seo') renderSeo();
     });
   });
 
@@ -500,7 +502,8 @@
       texts: $$('[name^="tx_"]').reduce(function(o, el){ o[el.name.slice(3)] = el.value.trim(); return o; }, {}),
       media: JSON.parse(JSON.stringify(mediaState)),
       portfolio: $$('#pf-rows .pf-row').map(function(r){ return {name:$('[name=pf_name]', r).value.trim(), url:r.dataset.url}; }),
-      regionPages: saved.regionPages || {}
+      regionPages: saved.regionPages || {},
+      seo: saved.seo || {}
     }};
   }
   $('#content-save').addEventListener('click', function(){
@@ -514,6 +517,99 @@
   });
   $('#content-reload').addEventListener('click', function(){ if(!dirty || confirm('저장하지 않은 변경 사항을 버릴까요?')) renderContent(); });
 
+  /* ---------------- 검색 노출 (페이지별 검색 제목·설명) ---------------- */
+  var SEO_PAGES = [
+    ['/', '홈 (메인)'], ['/lawyer-marketing/', '변호사마케팅'], ['/law-firm-marketing/', '법무법인마케팅'], ['/legal-marketing/', '법률마케팅'],
+    ['/services/cafe/', '서비스 · 대표 카페'], ['/services/influencer/', '서비스 · 인플루언서 블로그'], ['/services/blog/', '서비스 · 준최적화 블로그'],
+    ['/services/homepage/', '서비스 · 변호사 홈페이지'], ['/services/field/', '서비스 · 분야별 변호사마케팅'],
+    ['/regions/', '지역별 변호사마케팅 (목록)'], ['/insights/', '칼럼 (목록)']
+  ].concat(PO_STATIC.map(function(x){ return ['/insights/' + x[0] + '/', '칼럼 · ' + x[1]]; }));
+  var seoPath = '/', seoDef = {}, seoDirty = false, seoLoading = 0;
+  var SEO_HOST = '애드스팟.com', SEO_HOST_PUNY = 'xn--hy1bj5x75biyv.com';
+  function seoSaved(p){ return ((saved.seo || {})[p]) || {}; }
+  function seoLabel(p){ for(var i = 0; i < SEO_PAGES.length; i++) if(SEO_PAGES[i][0] === p) return SEO_PAGES[i][1]; return p; }
+  function seoMark(on){ seoDirty = on; var m = $('#seo-msg'), s = seoSaved(seoPath);
+    m.textContent = on ? '저장하지 않은 변경 사항이 있습니다.' : ((s.title || s.desc) ? '관리자 수정본이 적용 중입니다.' : '기본 제목·설명이 적용 중입니다.'); m.classList.toggle('dirty', on); }
+  (function(){
+    var sel = $('#seo-sel'); if(!sel) return;
+    sel.innerHTML = SEO_PAGES.map(function(x){ return '<option value="' + esc(x[0]) + '">' + esc(x[1]) + '</option>'; }).join('');
+    sel.addEventListener('change', function(){ seoGo(sel.value); });
+  })();
+  function seoGo(p){
+    if(p === seoPath) return;
+    if(seoDirty && !confirm('저장하지 않은 변경 사항을 버릴까요?')){ $('#seo-sel').value = seoPath; return; }
+    seoPath = p; $('#seo-sel').value = p; renderSeo();
+  }
+  function seoCount(el){
+    var lab = el.closest('.f'), c = lab && $('.cnt', lab); if(!c) return;
+    var n = el.value.trim().length, isT = el.name === 'seo_title';
+    var lo = isT ? 15 : 60, hi = isT ? 40 : 160;
+    c.textContent = n + '자'; c.className = 'cnt ' + (n === 0 ? '' : (n >= lo && n <= hi ? 'ok' : 'warn'));
+  }
+  function seoHl(s){
+    // 미리보기에서 주요 키워드를 굵게 (검색어 강조 흉내)
+    return esc(s).replace(/(변호사\s?마케팅|법률\s?마케팅|법무법인\s?마케팅|마케팅)/g, '<b>$1</b>');
+  }
+  function seoPreview(){
+    var fm = $('#seo-form'); if(!fm || !$('[name=seo_title]', fm)) return;
+    var t = $('[name=seo_title]', fm).value.trim() || seoDef.title || '', d = $('[name=seo_desc]', fm).value.trim() || seoDef.desc || '';
+    $('#seo-prev').innerHTML = '<div class="sp-site"><span class="sp-ico"><img src="/favicon-32.png" alt=""></span><span><b>' + SEO_HOST + '</b><span>' + esc(SEO_HOST + seoPath) + '</span></span></div>' +
+      '<p class="sp-title">' + seoHl(t) + '</p><p class="sp-desc">' + seoHl(d.replace(/\s*\n\s*/g, ' ')) + '</p>';
+  }
+  function seoList(){
+    $('#seo-list').innerHTML = SEO_PAGES.map(function(x){ var s = seoSaved(x[0]), ed = !!(s.title || s.desc);
+      return '<li data-p="' + esc(x[0]) + '"' + (x[0] === seoPath ? ' class="on"' : '') + '><span>' + esc(x[1]) + '</span><em' + (ed ? ' class="ed"' : '') + '>' + (ed ? '수정됨' : '기본') + '</em></li>'; }).join('');
+  }
+  $('#seo-list').addEventListener('click', function(e){ var li = e.target.closest('li[data-p]'); if(li) seoGo(li.dataset.p); });
+  function renderSeo(){
+    var p = seoPath, s = seoSaved(p), my = ++seoLoading;
+    $('#seo-view').href = p; seoList();
+    $('#seo-form').innerHTML = '<p class="hint">현재 제목·설명을 불러오는 중…</p>'; $('#seo-prev').innerHTML = '';
+    fetch(p + '?admin-raw=1', {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); }).then(function(html){
+      if(my !== seoLoading) return;
+      var doc = new DOMParser().parseFromString(html, 'text/html'), md = doc.querySelector('meta[name="description"]');
+      seoDef = {title:(doc.querySelector('title') || {}).textContent ? doc.querySelector('title').textContent.trim() : '', desc: md ? (md.getAttribute('content') || '').trim() : ''};
+      var h = sec('검색 결과에 보이는 정보', esc(seoLabel(p)) + ' · ' + esc(p),
+        '<label class="f"><span>검색 제목 (파란 글씨)<em>15~40자 권장 · 핵심 키워드를 앞쪽에</em><i class="cnt"></i></span><input name="seo_title" maxlength="120" value="' + esc(s.title || seoDef.title) + '"></label>' +
+        '<p class="seo-def"><b>기본값:</b> ' + esc(seoDef.title) + '</p>' +
+        '<label class="f"><span>검색 설명 (아래 회색 글씨)<em>60~160자 권장 · 앞부분 80자 안에 하고 싶은 말을</em><i class="cnt"></i></span><textarea name="seo_desc" rows="4" maxlength="400">' + esc(s.desc || seoDef.desc) + '</textarea></label>' +
+        '<p class="seo-def"><b>기본값:</b> ' + esc(seoDef.desc) + '</p>' +
+        '<p class="hint small">페이지 공유(카카오톡·페이스북) 미리보기 제목·설명도 함께 바뀝니다. 같은 키워드를 여러 번 반복하면 오히려 불리할 수 있어요.</p>', true);
+      $('#seo-form').innerHTML = h;
+      $$('#seo-form input, #seo-form textarea').forEach(seoCount);
+      seoPreview(); seoMark(false);
+    }).catch(function(){ if(my === seoLoading) $('#seo-form').innerHTML = '<p class="hint">페이지를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.</p>'; });
+  }
+  $('#seo-form').addEventListener('input', function(e){ seoCount(e.target); seoPreview(); seoMark(true); });
+  function seoPut(map, okMsg){
+    var content = Object.assign({}, saved, {seo: map}); delete content.updatedAt;
+    var btns = $$('#seo-bar .btn'); btns.forEach(function(b){ b.disabled = true; });
+    return api('PUT', '/admin/content', {content:content})
+      .then(function(j){ saved = Object.assign({}, content, {updatedAt:j.updatedAt}); seoMark(false); seoList(); toast(okMsg); })
+      .catch(function(err){ toast('저장 실패: ' + err.message); })
+      .then(function(){ btns.forEach(function(b){ b.disabled = false; }); });
+  }
+  $('#seo-save').addEventListener('click', function(){
+    var fm = $('#seo-form'), ti = $('[name=seo_title]', fm), de = $('[name=seo_desc]', fm); if(!ti) return;
+    var t = ti.value.trim(), d = de.value.trim().replace(/\s*\n\s*/g, ' ');
+    if(!t){ alert('검색 제목을 입력해 주세요. (기본값으로 돌리려면 ‘기본값으로 되돌리기’를 누르세요)'); return; }
+    var o = {}; if(t !== seoDef.title) o.title = t; if(d && d !== seoDef.desc) o.desc = d;
+    var map = Object.assign({}, saved.seo || {});
+    if(o.title || o.desc) map[seoPath] = o; else delete map[seoPath];
+    seoPut(map, seoLabel(seoPath) + ' 검색 제목·설명을 저장했습니다.');
+  });
+  $('#seo-reset').addEventListener('click', function(){
+    if(!confirm('이 페이지의 검색 제목·설명을 기본값으로 되돌릴까요?')) return;
+    var map = Object.assign({}, saved.seo || {}); delete map[seoPath];
+    seoPut(map, '기본값으로 되돌렸습니다.').then(renderSeo);
+  });
+  $('#seo-ping').addEventListener('click', function(){
+    if(seoDirty){ alert('먼저 저장해 주세요.'); return; }
+    api('POST', '/admin/indexnow', {paths:[seoPath]}).then(function(j){
+      var ok = (j.results || []).filter(function(r){ return r.status >= 200 && r.status < 300; }).length;
+      toast('검색엔진 알림 전송: ' + ok + '/' + (j.results || []).length + '곳 접수');
+    }).catch(function(err){ toast('알림 실패: ' + err.message); });
+  });
 
   /* ---------------- 지역 페이지 ---------------- */
   var RD = window.ADSPOT_REGION_DEFAULTS || {};
